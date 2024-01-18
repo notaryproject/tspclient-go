@@ -46,7 +46,7 @@ type value interface {
 
 // ConvertToDER converts BER-encoded ASN.1 data structures to DER-encoded.
 func ConvertToDER(ber []byte) ([]byte, error) {
-	if ber == nil || len(ber) == 0 {
+	if len(ber) == 0 {
 		return nil, asn1.SyntaxError{Msg: "BER-encoded ASN.1 data structures is empty"}
 	}
 
