@@ -21,6 +21,7 @@
 // Reference:
 // - http://luca.ntop.org/Teaching/Appunti/asn1.html
 // - ISO/IEC 8825-1:2021
+// - https://learn.microsoft.com/windows/win32/seccertenroll/about-introduction-to-asn-1-syntax-and-encoding
 package ber
 
 import (
@@ -32,7 +33,7 @@ import (
 // value is the interface for an ASN.1 value node.
 type value interface {
 	// EncodeMetadata encodes the identifier and length in DER to the buffer.
-	EncodeMetadata(Writer) error
+	EncodeMetadata(writer) error
 
 	// EncodedLen returns the length in bytes of the data when encoding in DER.
 	EncodedLen() int

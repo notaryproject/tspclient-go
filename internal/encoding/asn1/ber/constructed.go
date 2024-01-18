@@ -23,7 +23,7 @@ type constructed struct {
 
 // EncodeMetadata encodes the identifier and length octets of constructed
 // to the value writer in DER.
-func (v *constructed) EncodeMetadata(w Writer) error {
+func (v *constructed) EncodeMetadata(w writer) error {
 	_, err := w.Write(v.identifier)
 	if err != nil {
 		return err

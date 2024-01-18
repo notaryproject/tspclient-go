@@ -21,7 +21,7 @@ type primitive struct {
 
 // EncodeMetadata encodes the identifier and length octets of primitive to
 // the value writer in DER.
-func (v *primitive) EncodeMetadata(w Writer) error {
+func (v *primitive) EncodeMetadata(w writer) error {
 	_, err := w.Write(v.identifier)
 	if err != nil {
 		return err

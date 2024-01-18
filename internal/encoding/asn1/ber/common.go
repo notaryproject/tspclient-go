@@ -13,18 +13,17 @@
 
 package ber
 
-import (
-	"io"
-)
+import "io"
 
-// Writer is the interface that wraps the basic Write and WriteByte methods.
-type Writer interface {
+// writer is the interface that wraps the basic Write and WriteByte methods.
+type writer interface {
 	io.Writer
 	io.ByteWriter
 }
 
 // encodeLength encodes length octets in DER.
 // Reference: ISO/IEC 8825-1: 10.1
+// Reference: https://learn.microsoft.com/windows/win32/seccertenroll/about-encoded-length-and-value-bytes
 func encodeLength(w io.ByteWriter, length int) error {
 	// DER restriction: short form must be used for length less than 128
 	if length < 0x80 {
@@ -48,14 +47,16 @@ func encodeLength(w io.ByteWriter, length int) error {
 // encodedLengthSize gives the number of octets used for encoding the length
 // in DER.
 // Reference: ISO/IEC 8825-1: 10.1
+// Reference: https://learn.microsoft.com/windows/win32/seccertenroll/about-encoded-length-and-value-bytes
 func encodedLengthSize(length int) int {
 	if length < 0x80 {
 		return 1
 	}
 
 	lengthSize := 1
-	for ; length > 0; lengthSize++ {
+	for length > 0 {
 		length >>= 8
+		lengthSize++
 	}
 	return lengthSize
 }
