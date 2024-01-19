@@ -340,7 +340,7 @@ func TestVerifyAttributes(t *testing.T) {
 		},
 		{
 			name:     "with invalid signing time",
-			filePath: "testdata/TimeStampTokenWithSigingTime.p7s",
+			filePath: "testdata/TimeStampTokenWithInvalidSigningTime.p7s",
 			wantErr:  true,
 		},
 		{
