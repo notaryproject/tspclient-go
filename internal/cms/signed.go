@@ -141,17 +141,19 @@ func (d *ParsedSignedData) Verify(ctx context.Context, opts x509.VerifyOptions) 
 	return verifiedSigningCertificates, nil
 }
 
-// VerifySigner verifies the signerInfo against the signingCertificate.
+// VerifySigner verifies the signerInfo against the user specified signingCertificate.
 //
-// SignedData's certificates field is optional, so this function can be used
-// to verify the signerInfo without the certificates field. Or the user doesn't
-// trust the certificates of SignedData and the signer identifier of
-// the SignerInfo (they are unsigned fields), this function can be used to
-// verify the signerInfo against the user provided signingCertificate.
+// This function should be used when:
 //
-// Note: the intermediate certificates and root certificates in the verify
-// options should be set by the user. The certificates in the SignedData
-// will be ignored.
+// 1. The certificates field of d is missing. This function allows the caller to provide
+// a signing certificate to verify the signerInfo.
+//
+// 2. The caller doesn't trust the signer identifier (unsigned field) of signerInfo
+// to identify signing certificate. This function allows such caller to use their trusted
+// signing certificate.
+//
+// Note: the intermediate certificates (if any) and root certificates in the verify
+// options MUST be set by the caller. The certificates field of d is not used in this function.
 //
 // References:
 //   - RFC 5652 5   Signed-data Content Type
@@ -171,11 +173,6 @@ func (d *ParsedSignedData) VerifySigner(ctx context.Context, signerInfo *SignerI
 	if signerInfo.Version != 1 {
 		// Only IssuerAndSerialNumber is supported currently
 		return nil, VerificationError{Message: fmt.Sprintf("invalid signer info version: only version 1 is supported; got %d", signerInfo.Version)}
-	}
-
-	// user provided signing certificate must match the one in signer info
-	if !bytes.Equal(signingCertificate.RawIssuer, signerInfo.SignerIdentifier.Issuer.FullBytes) || signingCertificate.SerialNumber.Cmp(signerInfo.SignerIdentifier.SerialNumber) != 0 {
-		return nil, SyntaxError{Message: "signing certificate does not match signer info"}
 	}
 
 	return d.verify(signerInfo, signingCertificate, &opts)
@@ -199,7 +196,7 @@ func (d *ParsedSignedData) verify(signerInfo *SignerInfo, cert *x509.Certificate
 	}
 
 	// verify attribute
-	return cert, d.verifyAttributes(signerInfo, certChains)
+	return cert, d.verifySignedAttributes(signerInfo, certChains)
 }
 
 // verifySignature verifies the signature with a trusted certificate.
@@ -232,12 +229,12 @@ func (d *ParsedSignedData) verifySignature(signerInfo *SignerInfo, cert *x509.Ce
 	return nil
 }
 
-// verifyAttributes verifies the signed attributes.
+// verifySignedAttributes verifies the signed attributes.
 //
 // References:
 //   - RFC 5652 5.3 SignerInfo Type
 //   - RFC 5652 5.6 Signature Verification Process
-func (d *ParsedSignedData) verifyAttributes(signerInfo *SignerInfo, chains [][]*x509.Certificate) error {
+func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains [][]*x509.Certificate) error {
 	// verify attributes if present
 	if len(signerInfo.SignedAttributes) == 0 {
 		if d.ContentType.Equal(oid.Data) {
@@ -289,7 +286,7 @@ func (d *ParsedSignedData) verifyAttributes(signerInfo *SignerInfo, chains [][]*
 		}
 	}
 
-	return VerificationError{Message: "signature was generated outside certificate's validity period"}
+	return VerificationError{Message: fmt.Sprintf("signing time, %s, is outside certificate's validity period", signingTime)}
 }
 
 // isSigningTimeValid helpes to check if signingTime is within the validity

@@ -340,7 +340,7 @@ func TestVerifyAttributes(t *testing.T) {
 		},
 		{
 			name:     "with invalid signing time",
-			filePath: "testdata/TimeStampTokenWithSigingTime.p7s",
+			filePath: "testdata/TimeStampTokenWithInvalidSigningTime.p7s",
 			wantErr:  true,
 		},
 		{
@@ -372,7 +372,7 @@ func TestVerifyAttributes(t *testing.T) {
 				t.Fatal("ParseSignedData() error =", err)
 			}
 
-			err = signed.verifyAttributes(&signed.SignerInfos[0], [][]*x509.Certificate{signed.Certificates})
+			err = signed.verifySignedAttributes(&signed.SignerInfos[0], [][]*x509.Certificate{signed.Certificates})
 			if testcase.wantErr && err == nil {
 				t.Errorf("ParseSignedData.Verify() error = %v, wantErr %v", err, true)
 			} else if !testcase.wantErr && err != nil {

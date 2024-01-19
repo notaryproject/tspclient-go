@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package cms verifies signatures in Cryptographic Message Syntax (CMS) / PKCS7
-// defined in RFC 5652.
+// Package cms verifies Signed-Data defined in RFC 5652 Cryptographic Message
+// Syntax (CMS) / PKCS7
 //
 // References:
 // - RFC 5652 Cryptographic Message Syntax (CMS): https://datatracker.ietf.org/doc/html/rfc5652
