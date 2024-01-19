@@ -47,7 +47,7 @@ func encodeLength(w io.ByteWriter, length int) error {
 
 // encodedLengthSize gives the number of octets used for encoding the length
 // in DER.
-// Reference
+// Reference:
 // - ISO/IEC 8825-1: 10.1
 // - https://learn.microsoft.com/windows/win32/seccertenroll/about-encoded-length-and-value-bytes
 func encodedLengthSize(length int) int {
