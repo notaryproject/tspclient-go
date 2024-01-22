@@ -26,7 +26,7 @@ import (
 )
 
 func TestParseSignedToken(t *testing.T) {
-	timestampToken, err := os.ReadFile("testdata/TimestampTokenWithInvalideContentType.p7s")
+	timestampToken, err := os.ReadFile("testdata/TimeStampTokenWithInvalideContentType.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestGetSigningCertificate(t *testing.T) {
 
 func TestVerifyContent(t *testing.T) {
 	message := []byte("notation")
-	timestampToken, err := getTimestampTokenFromPath("testdata/Timestamptoken.p7s")
+	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestVerifyContent(t *testing.T) {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
 
-	timestampToken, err = getTimestampTokenFromPath("testdata/SHA1Timestamptoken.p7s")
+	timestampToken, err = getTimestampTokenFromPath("testdata/SHA1TimeStampToken.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +194,7 @@ func TestVerifyContent(t *testing.T) {
 }
 
 func TestTSTInfoVerify(t *testing.T) {
-	timestampToken, err := getTimestampTokenFromPath("testdata/Timestamptoken.p7s")
+	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
