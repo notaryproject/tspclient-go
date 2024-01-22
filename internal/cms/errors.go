@@ -59,7 +59,7 @@ type VerificationError struct {
 
 // Error returns error message.
 func (e VerificationError) Error() string {
-	msg := "cms: verification failure"
+	msg := "cms verification failure"
 	if e.Message != "" {
 		msg += ": " + e.Message
 	}

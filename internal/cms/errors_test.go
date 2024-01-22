@@ -46,8 +46,8 @@ func TestVerificationError(t *testing.T) {
 		err     VerificationError
 		wantMsg string
 	}{
-		{"No detail", VerificationError{Message: "test"}, "cms: verification failure: test"},
-		{"With detail", VerificationError{Message: "test", Detail: errors.New("detail")}, "cms: verification failure: test: detail"},
+		{"No detail", VerificationError{Message: "test"}, "cms verification failure: test"},
+		{"With detail", VerificationError{Message: "test", Detail: errors.New("detail")}, "cms verification failure: test: detail"},
 	}
 
 	for _, tt := range tests {
