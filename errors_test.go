@@ -11,14 +11,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package timestamp
+package tspclient
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
+
+var errTestInner = errors.New("test inner error")
 
 func TestMalformedRequestError(t *testing.T) {
 	newErr := MalformedRequestError{}
 	expectedErrMsg := "malformed timestamping request"
 	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+}
+
+func TestSignedTokenVerificationError(t *testing.T) {
+	newErr := SignedTokenVerificationError{Msg: "test error msg"}
+	expectedErrMsg := "failed to verify signed token: test error msg"
+	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+
+	newErr = SignedTokenVerificationError{Detail: errTestInner}
+	expectedErrMsg = "failed to verify signed token: test inner error"
+	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+
+	innerErr := newErr.Unwrap()
+	expectedErrMsg = "test inner error"
+	if innerErr.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
 	}
 }

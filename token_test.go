@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package timestamp
+package tspclient
 
 import (
 	"context"
@@ -65,11 +65,17 @@ func TestVerify(t *testing.T) {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
 
+	timestampToken = &SignedToken{}
+	expectedErrMsg := "failed to verify signed token: signerInfo not found"
+	if _, err := timestampToken.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
 	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithoutCertificate.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg := "signing certificate not found in the timestamp token"
+	expectedErrMsg = "failed to verify signed token: signing certificate not found in the timestamp token"
 	if _, err := timestampToken.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -78,7 +84,7 @@ func TestVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg = "failed to verify timestamp token"
+	expectedErrMsg = "failed to verify signed token: cms: verification failure: crypto/rsa: verification error"
 	if _, err := timestampToken.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}

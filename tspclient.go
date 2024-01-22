@@ -11,9 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package timestamp generates timestamping requests to TSA servers,
-// and fetches the responses according to RFC 3161: https://datatracker.ietf.org/doc/html/rfc3161
-package timestamp
+// Package tspclient generates timestamping requests to TSA servers,
+// fetches and verifies the responses according to
+// RFC 3161: https://datatracker.ietf.org/doc/html/rfc3161
+package tspclient
 
 import "context"
 

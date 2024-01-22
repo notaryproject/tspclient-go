@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package timestamp
+package tspclient
 
 import (
 	"crypto"
@@ -57,7 +57,7 @@ func TestRequestMarshalBinary(t *testing.T) {
 
 func TestRequestUnmarshalBinary(t *testing.T) {
 	var r *Request
-	expectedErrMsg := "asn1: Unmarshal recipient value is nil *timestamp.Request"
+	expectedErrMsg := "asn1: Unmarshal recipient value is nil *tspclient.Request"
 	err := r.UnmarshalBinary([]byte("test"))
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)

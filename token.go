@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package timestamp
+package tspclient
 
 import (
 	"bytes"
@@ -52,6 +52,9 @@ func ParseSignedToken(ctx context.Context, berData []byte) (*SignedToken, error)
 // The `Intermediates` in the verify options will be ignored and
 // re-contrusted using the certificates in the parsed signed token.
 func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x509.Certificate, error) {
+	if len(t.SignerInfos) == 0 {
+		return nil, SignedTokenVerificationError{Msg: "signerInfo not found"}
+	}
 	if len(opts.KeyUsages) == 0 {
 		opts.KeyUsages = []x509.ExtKeyUsage{x509.ExtKeyUsageTimeStamping}
 	}
@@ -66,25 +69,24 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 	for _, signerInfo := range t.SignerInfos {
 		signingCertificate, err := t.GetSigningCertificate(ctx, &signerInfo)
 		if err != nil {
-			lastErr = err
+			lastErr = SignedTokenVerificationError{Detail: err}
 			continue
 		}
 		if _, err := signed.VerifySigner(ctx, &signerInfo, signingCertificate, opts); err != nil {
-			lastErr = err
+			lastErr = SignedTokenVerificationError{Detail: err}
 			continue
 		}
-		// RFC 3161 2.3: The corresponding certificate MUST contain only one instance of
-		// the extended key usage field extension.
-		if len(signingCertificate.ExtKeyUsage) == 1 && len(signingCertificate.UnknownExtKeyUsage) == 0 {
+		// RFC 3161 2.3: The corresponding certificate MUST contain only one
+		// instance of the extended key usage field extension.
+		if len(signingCertificate.ExtKeyUsage) == 1 &&
+			signingCertificate.ExtKeyUsage[0] == x509.ExtKeyUsageTimeStamping &&
+			len(signingCertificate.UnknownExtKeyUsage) == 0 {
 			verifiedCerts = append(verifiedCerts, signingCertificate)
+		} else {
+			lastErr = SignedTokenVerificationError{Msg: "signing certificate MUST only have ExtKeyUsageTimeStamping as extended key usage"}
 		}
 	}
 	if len(verifiedCerts) == 0 {
-		var verificationErr cms.VerificationError
-		if errors.As(lastErr, &verificationErr) {
-			// TODO : add a debug logger here to log the verificationErr
-			return nil, errors.New("failed to verify timestamp token")
-		}
 		return nil, lastErr
 	}
 	return verifiedCerts, nil

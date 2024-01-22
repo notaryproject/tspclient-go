@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package timestamp
+package tspclient
 
 import (
 	"context"
@@ -60,7 +60,7 @@ type testTSA struct {
 func TestTSATimestampGranted(t *testing.T) {
 	// prepare TSA
 	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
-	tsa, err := newTestTSA()
+	tsa, err := newTestTSA(false)
 	if err != nil {
 		t.Fatalf("NewTSA() error = %v", err)
 	}
@@ -117,7 +117,7 @@ func TestTSATimestampGranted(t *testing.T) {
 
 func TestTSATimestampRejection(t *testing.T) {
 	// prepare TSA
-	tsa, err := newTestTSA()
+	tsa, err := newTestTSA(false)
 	if err != nil {
 		t.Fatalf("NewTSA() error = %v", err)
 	}
@@ -140,8 +140,51 @@ func TestTSATimestampRejection(t *testing.T) {
 	}
 }
 
+func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
+	// prepare TSA
+	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
+	tsa, err := newTestTSA(true)
+	if err != nil {
+		t.Fatalf("NewTSA() error = %v", err)
+	}
+	tsa.nowFunc = func() time.Time {
+		return now
+	}
+
+	// do timestamp
+	message := []byte("notation")
+	req, err := NewRequestFromContent(message, crypto.SHA256)
+	if err != nil {
+		t.Fatalf("NewRequestFromContent() error = %v", err)
+	}
+	ctx := context.Background()
+	resp, err := tsa.Timestamp(ctx, req)
+	if err != nil {
+		t.Fatalf("TSA.Timestamp() error = %v", err)
+	}
+	wantStatus := pki.StatusGranted
+	if got := resp.Status.Status; got != wantStatus {
+		t.Fatalf("Response.Status = %v, want %v", got, wantStatus)
+	}
+
+	// verify timestamp token
+	token, err := resp.SignedToken()
+	if err != nil {
+		t.Fatalf("Response.SignedToken() error = %v", err)
+	}
+	roots := x509.NewCertPool()
+	roots.AddCert(tsa.certificate())
+	opts := x509.VerifyOptions{
+		Roots: roots,
+	}
+	expectedErrMsg := "failed to verify signed token: signing certificate MUST only have ExtKeyUsageTimeStamping as extended key usage"
+	if _, err := token.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+}
+
 // newTestTSA creates a testTSA with random credentials.
-func newTestTSA() (*testTSA, error) {
+func newTestTSA(malformedExtKeyUsage bool) (*testTSA, error) {
 	// generate key
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -153,6 +196,12 @@ func newTestTSA() (*testTSA, error) {
 	if err != nil {
 		return nil, err
 	}
+	var extKeyUsages []x509.ExtKeyUsage
+	if malformedExtKeyUsage {
+		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageAny)
+	} else {
+		extKeyUsages = append(extKeyUsages, x509.ExtKeyUsageTimeStamping)
+	}
 	now := time.Now()
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
@@ -162,7 +211,7 @@ func newTestTSA() (*testTSA, error) {
 		NotBefore:             now,
 		NotAfter:              now.Add(365 * 24 * time.Hour), // 1 year
 		KeyUsage:              x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageTimeStamping},
+		ExtKeyUsage:           extKeyUsages,
 		BasicConstraintsValid: true,
 	}
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)

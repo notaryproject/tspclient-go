@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package timestamp
+package tspclient
 
 // CertificateNotFoundError is used when identified certificate is not found
 // in the timestampe token
@@ -19,12 +19,36 @@ type CertificateNotFoundError error
 
 // MalformedRequestError is used when timestamping request is malformed.
 type MalformedRequestError struct {
-	msg string
+	Msg string
 }
 
+// Error returns error message.
 func (e MalformedRequestError) Error() string {
-	if e.msg != "" {
-		return e.msg
+	if e.Msg != "" {
+		return e.Msg
 	}
 	return "malformed timestamping request"
+}
+
+// SignedTokenVerificationError is used when fail to verify signed token.
+type SignedTokenVerificationError struct {
+	Msg    string
+	Detail error
+}
+
+// Error returns error message.
+func (e SignedTokenVerificationError) Error() string {
+	msg := "failed to verify signed token"
+	if e.Msg != "" {
+		msg += ": " + e.Msg
+	}
+	if e.Detail != nil {
+		msg += ": " + e.Detail.Error()
+	}
+	return msg
+}
+
+// Unwrap returns the internal error.
+func (e SignedTokenVerificationError) Unwrap() error {
+	return e.Detail
 }
