@@ -19,8 +19,8 @@ import (
 	"encoding/asn1"
 	"errors"
 	"fmt"
+	"math/big"
 
-	"github.com/notaryproject/tspclient-go/internal/cms"
 	"github.com/notaryproject/tspclient-go/internal/pki"
 )
 
@@ -34,7 +34,8 @@ type Response struct {
 	TimeStampToken asn1.RawValue `asn1:"optional"`
 }
 
-// SigningCertificateV2 contains certificates of the TSA.
+// SigningCertificateV2 contains certificate hash and identifier of the
+// TSA signing certificate.
 //
 // Reference: RFC 5035 3 SigningCertificateV2
 //
@@ -44,23 +45,23 @@ type Response struct {
 type SigningCertificateV2 struct {
 	// Certificates contains the list of certificates. The first certificate
 	// MUST be the signing certificate used to verify the timestamp token.
-	Certificates []ESSCertIDv2
+	Certificates []eSSCertIDv2
 
 	// Policies suggests policy values to be used in the certification path
 	// validation.
 	Policies asn1.RawValue `asn1:"optional"`
 }
 
-// ESSCertIDv2 uniquely identifies a certificate.
+// eSSCertIDv2 uniquely identifies a certificate.
 //
-// Reference: RFC 5035 4 ESSCertIDv2
+// Reference: RFC 5035 4
 //
-//	ESSCertIDv2 ::=  SEQUENCE {
+//	eSSCertIDv2 ::=  SEQUENCE {
 //	 hashAlgorithm           AlgorithmIdentifier
 //	 	DEFAULT {algorithm id-sha256},
 //	 certHash                 Hash,
 //	 issuerSerial             IssuerSerial OPTIONAL }
-type ESSCertIDv2 struct {
+type eSSCertIDv2 struct {
 	// HashAlgorithm is the hashing algorithm used to hash certificate.
 	// When it is not present, the default value is SHA256 (id-sha256).
 	// SHA1 is unsupported.
@@ -74,7 +75,39 @@ type ESSCertIDv2 struct {
 	// IssuerSerial holds the issuer and serialNumber of the certificate
 	// When it is not present, the SignerIdentifier field in the SignerInfo
 	// will be used.
-	IssuerSerial cms.IssuerAndSerialNumber `asn1:"optional"`
+	IssuerSerial issuerAndSerial `asn1:"optional"`
+}
+
+// issuerAndSerial holds the issuer name and serialNumber of the certificate
+//
+// Refrence: Reference: RFC 5035 4
+//
+//	IssuerSerial ::= SEQUENCE {
+//		issuer                   GeneralNames,
+//		serialNumber             CertificateSerialNumber }
+type issuerAndSerial struct {
+	IssuerName   generalNames
+	SerialNumber *big.Int
+}
+
+// generalNames holds the issuer name of the certificate.
+//
+// Reference: RFC 3280 4.2.1.7
+//
+// GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
+//
+//	GeneralName ::= CHOICE {
+//		otherName                       [0]     OtherName,
+//		rfc822Name                      [1]     IA5String,
+//		dNSName                         [2]     IA5String,
+//		x400Address                     [3]     ORAddress,
+//		directoryName                   [4]     Name,
+//		ediPartyName                    [5]     EDIPartyName,
+//		uniformResourceIdentifier       [6]     IA5String,
+//		iPAddress                       [7]     OCTET STRING,
+//		registeredID                    [8]     OBJECT IDENTIFIER }
+type generalNames struct {
+	Name asn1.RawValue `asn1:"optional,tag:4"`
 }
 
 // MarshalBinary encodes the response to binary form.

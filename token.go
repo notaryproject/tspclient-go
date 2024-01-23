@@ -106,9 +106,10 @@ func (t *SignedToken) Info() (*TSTInfo, error) {
 }
 
 // GetSigningCertificate gets the signing certificate identified by SignedToken
-// SignerInfo's SigningCertificate attribute. If the IssuerSerial
+// SignerInfo's SigningCertificateV2 attribute. If the IssuerSerial
 // field of signing certificate is missing, use signerInfo's sid instead.
-// The identified signing certificate MUST match the hash in SigningCertificate.
+// The identified signing certificate MUST match the hash in
+// SigningCertificateV2.
 //
 // References: RFC 3161 2.4.1 & 2.4.2; RFC 5035 4
 func (t *SignedToken) GetSigningCertificate(ctx context.Context, signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
@@ -119,21 +120,14 @@ func (t *SignedToken) GetSigningCertificate(ctx context.Context, signerInfo *cms
 	// get candidate signing certificate
 	var candidateSigningCert *x509.Certificate
 	signed := (*cms.ParsedSignedData)(t)
-	if signingCertificateV2.Certificates[0].IssuerSerial.Issuer.FullBytes != nil {
-		// use IssuerSerial from signingCertificateV2
-		var rawValue asn1.RawValue
-		_, err := asn1.Unmarshal(signingCertificateV2.Certificates[0].IssuerSerial.Issuer.Bytes, &rawValue)
-		if err != nil {
-			return nil, err
-		}
-		// RFC 3280 4.2.1.7
-		if rawValue.Tag != 4 {
-			return nil, fmt.Errorf("signing certificate IssuerSerial requires CHOICE tag 4, but got %d", rawValue.Tag)
+	if signingCertificateV2.Certificates[0].IssuerSerial.SerialNumber != nil {
+		// use IssuerSerial from SigningCertificateV2 signed attribute
+		if signingCertificateV2.Certificates[0].IssuerSerial.IssuerName.Name.Bytes == nil {
+			return nil, errors.New("issuer name is missing in IssuerSerial of SigningCertificateV2 attribute")
 		}
 		var issuer asn1.RawValue
-		_, err = asn1.Unmarshal(rawValue.Bytes, &issuer)
-		if err != nil {
-			return nil, err
+		if _, err := asn1.Unmarshal(signingCertificateV2.Certificates[0].IssuerSerial.IssuerName.Name.Bytes, &issuer); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal issuer name: %w", err)
 		}
 		ref := cms.IssuerAndSerialNumber{
 			Issuer:       issuer,
@@ -141,7 +135,7 @@ func (t *SignedToken) GetSigningCertificate(ctx context.Context, signerInfo *cms
 		}
 		candidateSigningCert = signed.GetCertificate(ref)
 	} else {
-		// use sid as IssuerSerial
+		// use sid (unsigned) as IssuerSerial
 		candidateSigningCert = signed.GetCertificate(signerInfo.SignerIdentifier)
 	}
 	if candidateSigningCert == nil {
@@ -151,9 +145,10 @@ func (t *SignedToken) GetSigningCertificate(ctx context.Context, signerInfo *cms
 	hash := crypto.SHA256 // default hash algorithm is id-sha256
 	var ok bool
 	if signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm != nil {
+		// use hash algorithm from SigningCertificateV2 signed attribute
 		hash, ok = oid.ToHash(signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm)
 		if !ok {
-			return nil, errors.New("unsupported certificate hash algorithm in SigningCertificate attribute")
+			return nil, errors.New("unsupported certificate hash algorithm in SigningCertificateV2 attribute")
 		}
 	}
 	certHash, err := hashutil.ComputeHash(hash, candidateSigningCert.Raw)
@@ -161,7 +156,7 @@ func (t *SignedToken) GetSigningCertificate(ctx context.Context, signerInfo *cms
 		return nil, err
 	}
 	if !bytes.Equal(certHash, signingCertificateV2.Certificates[0].CertHash) {
-		return nil, errors.New("signing certificate hash does not match CertHash in SigningCertificate attribute")
+		return nil, errors.New("signing certificate hash does not match CertHash in SigningCertificateV2 attribute")
 	}
 	return candidateSigningCert, nil
 }

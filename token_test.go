@@ -124,7 +124,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg = "signing certificate IssuerSerial requires CHOICE tag 4, but got 7"
+	expectedErrMsg = "issuer name is missing in IssuerSerial of SigningCertificateV2 attribute"
 	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -150,7 +150,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg = "unsupported certificate hash algorithm in SigningCertificate attribute"
+	expectedErrMsg = "unsupported certificate hash algorithm in SigningCertificateV2 attribute"
 	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -159,7 +159,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg = "signing certificate hash does not match CertHash in SigningCertificate attribute"
+	expectedErrMsg = "signing certificate hash does not match CertHash in SigningCertificateV2 attribute"
 	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
