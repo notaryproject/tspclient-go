@@ -29,7 +29,7 @@ import (
 	"github.com/notaryproject/tspclient-go/internal/cms"
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/internal/oid"
-	"github.com/notaryproject/tspclient-go/internal/pki"
+	"github.com/notaryproject/tspclient-go/pki"
 )
 
 // responseRejection is a general response for request rejection.

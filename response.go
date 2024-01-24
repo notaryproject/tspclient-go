@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/notaryproject/tspclient-go/internal/pki"
+	"github.com/notaryproject/tspclient-go/pki"
 )
 
 // Response is a time-stamping response.
@@ -64,15 +64,15 @@ type SigningCertificateV2 struct {
 type eSSCertIDv2 struct {
 	// HashAlgorithm is the hashing algorithm used to hash certificate.
 	// When it is not present, the default value is SHA256 (id-sha256).
-	// SHA1 is unsupported.
+	// Supported values are SHA256, SHA384, and SHA512
 	HashAlgorithm pkix.AlgorithmIdentifier `asn1:"optional"`
 
-	// CertHash is the certificate hash using algorithm identified
-	// by HashAlgorithm. It is is computed over the entire DER-encoded
+	// CertHash is the certificate hash using algorithm specified
+	// by HashAlgorithm. It is computed over the entire DER-encoded
 	// certificate (including the signature)
 	CertHash []byte
 
-	// IssuerSerial holds the issuer and serialNumber of the certificate
+	// IssuerSerial holds the issuer and serialNumber of the certificate.
 	// When it is not present, the SignerIdentifier field in the SignerInfo
 	// will be used.
 	IssuerSerial issuerAndSerial `asn1:"optional"`
@@ -80,7 +80,7 @@ type eSSCertIDv2 struct {
 
 // issuerAndSerial holds the issuer name and serialNumber of the certificate
 //
-// Refrence: Reference: RFC 5035 4
+// Reference: RFC 5035 4
 //
 //	IssuerSerial ::= SEQUENCE {
 //		issuer                   GeneralNames,
@@ -130,8 +130,9 @@ func (r *Response) UnmarshalBinary(data []byte) error {
 	return err
 }
 
-// ValidateStatus validates the response.Status according to
-// https://datatracker.ietf.org/doc/html/rfc3161#section-2.4.2
+// ValidateStatus validates the response.Status
+//
+// Reference: RFC 3161 2.4.2
 func (r *Response) ValidateStatus() error {
 	if r.Status.Status != pki.StatusGranted && r.Status.Status != pki.StatusGrantedWithMods {
 		return fmt.Errorf("invalid response with status code: %d", r.Status.Status)

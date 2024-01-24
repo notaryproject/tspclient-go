@@ -16,7 +16,7 @@ package tspclient
 import (
 	"testing"
 
-	"github.com/notaryproject/tspclient-go/internal/pki"
+	"github.com/notaryproject/tspclient-go/pki"
 )
 
 func TestResponseMarshalBinary(t *testing.T) {

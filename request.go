@@ -79,7 +79,7 @@ func NewRequest(digest []byte, alg crypto.Hash) (*Request, error) {
 	}, nil
 }
 
-// NewRequestFromContent creates a request based on the given data
+// NewRequestFromContent creates a request based on the given content
 // and hash algorithm.
 func NewRequestFromContent(content []byte, alg crypto.Hash) (*Request, error) {
 	digest, err := hashutil.ComputeHash(alg, content)

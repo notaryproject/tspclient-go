@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
-	"github.com/notaryproject/tspclient-go/internal/pki"
+	"github.com/notaryproject/tspclient-go/pki"
 )
 
 var testRequest = []byte{
