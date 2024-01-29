@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pki contains certificate management protocol structures
-// defined in RFC 3161.
+// Package pki contains Status of a timestamping response defined in RFC 3161.
 package pki
 
 import (
