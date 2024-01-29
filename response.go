@@ -135,7 +135,11 @@ func (r *Response) UnmarshalBinary(data []byte) error {
 // Reference: RFC 3161 2.4.2
 func (r *Response) ValidateStatus() error {
 	if r.Status.Status != pki.StatusGranted && r.Status.Status != pki.StatusGrantedWithMods {
-		return fmt.Errorf("invalid response with status code: %d", r.Status.Status)
+		failureInfo, err := r.Status.ParseFailInfo()
+		if err != nil {
+			return fmt.Errorf("invalid response with status code %d: %s", r.Status.Status, r.Status.Status.String())
+		}
+		return fmt.Errorf("invalid response with status code %d: %s. Failure info: %s", r.Status.Status, r.Status.Status.String(), failureInfo)
 	}
 	return nil
 }

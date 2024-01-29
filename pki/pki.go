@@ -12,40 +12,97 @@
 // limitations under the License.
 
 // Package pki contains certificate management protocol structures
-// defined in RFC 2510.
+// defined in RFC 3161.
 package pki
 
-import "encoding/asn1"
-
-// PKIStatus is defined in RFC 2510 3.2.3.
-const (
-	StatusGranted                = 0 // you got exactly what you asked for
-	StatusGrantedWithMods        = 1 // you got something like what you asked for
-	StatusRejection              = 2 // you don't get it, more information elsewhere in the message
-	StatusWaiting                = 3 // the request body part has not yet been processed, expect to hear more later
-	StatusRevocationWarning      = 4 // this message contains a warning that a revocation is imminent
-	StatusRevocationNotification = 5 // notification that a revocation has occurred
-	StatusKeyUpdateWarning       = 6 // update already done for the oldCertId specified in the key update request message
+import (
+	"encoding/asn1"
+	"errors"
 )
 
-// PKIFailureInfo is defined in RFC 2510 3.2.3 and RFC 3161 2.4.2.
+// ErrUnknownStatus is used when PKIStatus is not supported
+var ErrUnknownStatus = errors.New("unknown PKIStatus")
+
+// ErrUnknownFailureInfo is used when PKIFailureInfo is not supported or does
+// not exists
+var ErrUnknownFailureInfo = errors.New("unknown PKIFailureInfo")
+
+// Status is PKIStatus defined in RFC 3161 2.4.2.
+type Status int
+
 const (
-	FailureInfoBadAlg              = 0  // unrecognized or unsupported Algorithm Identifier
-	FailureInfoBadMessageCheck     = 1  // integrity check failed (e.g., signature did not verify)
-	FailureInfoBadRequest          = 2  // transaction not permitted or supported
-	FailureInfoBadTime             = 3  // messageTime was not sufficiently close to the system time, as defined by local policy
-	FailureInfoBadCertID           = 4  // no certificate could be found matching the provided criteria
-	FailureInfoBadDataFormat       = 5  // the data submitted has the wrong format
-	FailureInfoWrongAuthority      = 6  // the authority indicated in the request is different from the one creating the response token
-	FailureInfoIncorrectData       = 7  // the requester's data is incorrect (used for notary services)
-	FailureInfoMissingTimeStamp    = 8  // the timestamp is missing but should be there (by policy)
-	FailureInfoBadPOP              = 9  // the proof-of-possession failed
-	FailureInfoTimeNotAvailable    = 14 // the TSA's time source is not available
-	FailureInfoUnacceptedPolicy    = 15 // the requested TSA policy is not supported by the TSA.
-	FailureInfoUnacceptedExtension = 16 // the requested extension is not supported by the TSA.
-	FailureInfoAddInfoNotAvailable = 17 // the additional information requested could not be understood or is not available
-	FailureInfoSystemFailure       = 25 // the request cannot be handled due to system failure
+	StatusGranted                Status = 0 // you got exactly what you asked for
+	StatusGrantedWithMods        Status = 1 // you got something like what you asked for
+	StatusRejection              Status = 2 // you don't get it, more information elsewhere in the message
+	StatusWaiting                Status = 3 // the request body part has not yet been processed, expect to hear more later
+	StatusRevocationWarning      Status = 4 // this message contains a warning that a revocation is imminent
+	StatusRevocationNotification Status = 5 // notification that a revocation has occurred
 )
+
+// Statuses is an array of supported PKIStatus
+var Statuses = []Status{StatusGranted, StatusGrantedWithMods, StatusRejection, StatusWaiting, StatusRevocationWarning, StatusRevocationNotification}
+
+// String converts Status to string
+func (ps Status) String() string {
+	switch ps {
+	case StatusGranted:
+		return "granted"
+	case StatusGrantedWithMods:
+		return "granted with modifications"
+	case StatusRejection:
+		return "rejected"
+	case StatusWaiting:
+		return "the request body part has not yet been processed, expect to hear more later"
+	case StatusRevocationWarning:
+		return "warning: a revocation is imminent"
+	case StatusRevocationNotification:
+		return "a revocation has occurred"
+	default:
+		return "unknown PKIStatus"
+	}
+}
+
+// FailureInfo is PKIFailureInfo defined in RFC 3161 2.4.2.
+type FailureInfo int
+
+const (
+	FailureInfoBadAlg              FailureInfo = 0  // unrecognized or unsupported Algorithm Identifier
+	FailureInfoBadRequest          FailureInfo = 2  // transaction not permitted or supported
+	FailureInfoBadDataFormat       FailureInfo = 5  // the data submitted has the wrong format
+	FailureInfoTimeNotAvailable    FailureInfo = 14 // the TSA's time source is not available
+	FailureInfoUnacceptedPolicy    FailureInfo = 15 // the requested TSA policy is not supported by the TSA.
+	FailureInfoUnacceptedExtension FailureInfo = 16 // the requested extension is not supported by the TSA.
+	FailureInfoAddInfoNotAvailable FailureInfo = 17 // the additional information requested could not be understood or is not available
+	FailureInfoSystemFailure       FailureInfo = 25 // the request cannot be handled due to system failure
+)
+
+// FailureInfos is an array of supported PKIFailureInfo
+var FailureInfos = []FailureInfo{FailureInfoBadAlg, FailureInfoBadRequest, FailureInfoBadDataFormat, FailureInfoTimeNotAvailable,
+	FailureInfoUnacceptedPolicy, FailureInfoUnacceptedExtension, FailureInfoAddInfoNotAvailable, FailureInfoSystemFailure}
+
+// String converts FailureInfo to string
+func (pf FailureInfo) String() string {
+	switch pf {
+	case FailureInfoBadAlg:
+		return "unrecognized or unsupported Algorithm Identifier"
+	case FailureInfoBadRequest:
+		return "transaction not permitted or supported"
+	case FailureInfoBadDataFormat:
+		return "the data submitted has the wrong format"
+	case FailureInfoTimeNotAvailable:
+		return "the TSA's time source is not available"
+	case FailureInfoUnacceptedPolicy:
+		return "the requested TSA policy is not supported by the TSA"
+	case FailureInfoUnacceptedExtension:
+		return "the requested extension is not supported by the TSA"
+	case FailureInfoAddInfoNotAvailable:
+		return "the additional information requested could not be understood or is not available"
+	case FailureInfoSystemFailure:
+		return "the request cannot be handled due to system failure"
+	default:
+		return "unknown PKIFailureInfo"
+	}
+}
 
 // StatusInfo contains status codes and failure information for PKI messages.
 //
@@ -57,10 +114,20 @@ const (
 // PKIStatus        ::= INTEGER
 // PKIFreeText      ::= SEQUENCE SIZE (1..MAX) OF UTF8String
 // PKIFailureInfo   ::= BIT STRING
-// Reference: RFC 2510 3.2.3 Status codes and Failure Information for
-// PKI messages.
+//
+// Reference: RFC 3161 2.4.2
 type StatusInfo struct {
-	Status       int
+	Status       Status
 	StatusString []string       `asn1:"optional,utf8"`
 	FailInfo     asn1.BitString `asn1:"optional"`
+}
+
+// ParseFailInfo parses the FailInfo field of a PKIStatusInfo to PKIFailureInfo
+func (psi StatusInfo) ParseFailInfo() (FailureInfo, error) {
+	for _, pfi := range FailureInfos {
+		if psi.FailInfo.At(int(pfi)) != 0 {
+			return pfi, nil
+		}
+	}
+	return 0, ErrUnknownFailureInfo
 }

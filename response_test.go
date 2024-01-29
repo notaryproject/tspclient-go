@@ -14,6 +14,7 @@
 package tspclient
 
 import (
+	"encoding/asn1"
 	"testing"
 
 	"github.com/notaryproject/tspclient-go/pki"
@@ -52,8 +53,23 @@ func TestValidateStatus(t *testing.T) {
 			Status: pki.StatusRejection,
 		},
 	}
-	expectedErrMsg := "invalid response with status code: 2"
+	expectedErrMsg := "invalid response with status code 2: rejected"
 	err := (&badResponse).ValidateStatus()
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	badResponse = Response{
+		Status: pki.StatusInfo{
+			Status: pki.StatusRejection,
+			FailInfo: asn1.BitString{
+				Bytes:     []byte{0x80},
+				BitLength: 1,
+			},
+		},
+	}
+	expectedErrMsg = "invalid response with status code 2: rejected. Failure info: unrecognized or unsupported Algorithm Identifier"
+	err = (&badResponse).ValidateStatus()
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -75,7 +91,7 @@ func TestSignedToken(t *testing.T) {
 			Status: pki.StatusRejection,
 		},
 	}
-	expectedErrMsg := "invalid response with status code: 2"
+	expectedErrMsg := "invalid response with status code 2: rejected"
 	_, err := (&badResponse).SignedToken()
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
