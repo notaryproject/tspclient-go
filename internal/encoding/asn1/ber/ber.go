@@ -115,8 +115,12 @@ func decode(r []byte) ([]value, error) {
 
 	// start depth-first decoding with stack
 	contructedStack := []*constructed{rootConstructed}
-	for len(contructedStack) > 0 {
+	for {
 		stackLen := len(contructedStack)
+		if stackLen == 0 {
+			break
+		}
+
 		// top
 		node := contructedStack[stackLen-1]
 
@@ -259,7 +263,9 @@ func decodeLength(r []byte) (int, []byte, error) {
 			return 0, nil, asn1.SyntaxError{Msg: "decoding BER length octets: short form length octets value should be less or equal to the subsequent octets length"}
 		}
 		return contentLen, subsequentOctets, nil
-	} else if b == 0x80 {
+	}
+
+	if b == 0x80 {
 		// Indefinite-length method is not supported.
 		// Reference: ISO/IEC 8825-1: 8.1.3.6.1
 		return 0, nil, asn1.StructuralError{Msg: "decoding BER length octets: indefinite length not supported"}
