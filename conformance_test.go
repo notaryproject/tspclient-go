@@ -342,7 +342,7 @@ func (tsa *testTSA) generateSignedData(infoBytes []byte, requestCert bool) (cms.
 	if err != nil {
 		return cms.SignedData{}, err
 	}
-	signingCertificateV2 := SigningCertificateV2{
+	signingCertificateV2 := signingCertificateV2{
 		Certificates: []eSSCertIDv2{
 			{
 				CertHash: certHash,

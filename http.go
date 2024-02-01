@@ -26,7 +26,7 @@ import (
 // malicious remote server.
 // The legnth of a regular TSA response with certificates is usually less than
 // 10 KiB.
-const maxBodyLength = 1 * 1024 * 1024 // 1 MiB
+var maxBodyLength = 1 * 1024 * 1024 // 1 MiB
 
 // TimestampQuery is the content-type of timestamp query.
 // RFC 3161 3.4
@@ -88,10 +88,16 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 	}
 
 	// read response
-	body := io.LimitReader(hResp.Body, maxBodyLength)
-	respBytes, err := io.ReadAll(body)
+	lr := &io.LimitedReader{
+		R: hResp.Body,
+		N: int64(maxBodyLength),
+	}
+	respBytes, err := io.ReadAll(lr)
 	if err != nil {
 		return nil, err
+	}
+	if lr.N == 0 {
+		return nil, fmt.Errorf("%s %q: https response reached the %d MiB size limit", hResp.Request.Method, hResp.Request.URL, maxBodyLength/1024/1024)
 	}
 	var resp Response
 	if err := resp.UnmarshalBinary(respBytes); err != nil {

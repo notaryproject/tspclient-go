@@ -113,7 +113,7 @@ func (t *SignedToken) Info() (*TSTInfo, error) {
 //
 // References: RFC 3161 2.4.1 & 2.4.2; RFC 5035 4
 func (t *SignedToken) GetSigningCertificate(ctx context.Context, signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
-	var signingCertificateV2 SigningCertificateV2
+	var signingCertificateV2 signingCertificateV2
 	if err := signerInfo.SignedAttributes.TryGet(oid.SigningCertificateV2, &signingCertificateV2); err != nil {
 		return nil, fmt.Errorf("failed to get SigningCertificateV2 from signed attributes: %w", err)
 	}

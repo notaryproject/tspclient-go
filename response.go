@@ -34,15 +34,15 @@ type Response struct {
 	TimeStampToken asn1.RawValue `asn1:"optional"`
 }
 
-// SigningCertificateV2 contains certificate hash and identifier of the
+// signingCertificateV2 contains certificate hash and identifier of the
 // TSA signing certificate.
 //
-// Reference: RFC 5035 3 SigningCertificateV2
+// Reference: RFC 5035 3 signingCertificateV2
 //
-//	SigningCertificateV2 ::=  SEQUENCE {
+//	signingCertificateV2 ::=  SEQUENCE {
 //	 certs        SEQUENCE OF ESSCertIDv2,
 //	 policies     SEQUENCE OF PolicyInformation OPTIONAL }
-type SigningCertificateV2 struct {
+type signingCertificateV2 struct {
 	// Certificates contains the list of certificates. The first certificate
 	// MUST be the signing certificate used to verify the timestamp token.
 	Certificates []eSSCertIDv2
