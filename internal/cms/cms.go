@@ -154,7 +154,7 @@ type IssuerAndSerialNumber struct {
 	SerialNumber *big.Int
 }
 
-// Attributes struct is used to represent a collection of attributes.
+// Attribute struct is used to represent a attribute with type and values.
 //
 // Reference: RFC 5652 5.3 SignerInfo
 //
@@ -169,7 +169,7 @@ type Attribute struct {
 	Values asn1.RawValue `asn1:"set"`
 }
 
-// Attribute ::= SET SIZE (1..MAX) OF Attribute
+// Attributes ::= SET SIZE (0..MAX) OF Attribute
 type Attributes []Attribute
 
 // TryGet tries to find the attribute by the given identifier, parse and store
