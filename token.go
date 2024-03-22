@@ -64,7 +64,6 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 	}
 	opts.Intermediates = intermediates
 	signed := (*cms.ParsedSignedData)(t)
-	var verifiedCerts []*x509.Certificate
 	var lastErr error
 	for _, signerInfo := range t.SignerInfos {
 		signingCertificate, err := t.GetSigningCertificate(ctx, &signerInfo)
@@ -72,7 +71,8 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 			lastErr = SignedTokenVerificationError{Detail: err}
 			continue
 		}
-		if _, err := signed.VerifySigner(ctx, &signerInfo, signingCertificate, opts); err != nil {
+		certChain, err := signed.VerifySigner(ctx, &signerInfo, signingCertificate, opts)
+		if err != nil {
 			lastErr = SignedTokenVerificationError{Detail: err}
 			continue
 		}
@@ -81,15 +81,12 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 		if len(signingCertificate.ExtKeyUsage) == 1 &&
 			signingCertificate.ExtKeyUsage[0] == x509.ExtKeyUsageTimeStamping &&
 			len(signingCertificate.UnknownExtKeyUsage) == 0 {
-			verifiedCerts = append(verifiedCerts, signingCertificate)
+			return certChain, nil
 		} else {
 			lastErr = SignedTokenVerificationError{Msg: "signing certificate MUST only have ExtKeyUsageTimeStamping as extended key usage"}
 		}
 	}
-	if len(verifiedCerts) == 0 {
-		return nil, lastErr
-	}
-	return verifiedCerts, nil
+	return nil, lastErr
 }
 
 // Info returns the timestamping information.

@@ -66,12 +66,12 @@ func TestVerifySignedData(t *testing.T) {
 	if ok := roots.AppendCertsFromPEM(rootCABytes); !ok {
 		t.Fatal("failed to load root CA certificate")
 	}
-	verifiedSigners, err := signed.Verify(ctx, opts)
+	verifiedCertChains, err := signed.Verify(ctx, opts)
 	if err != nil {
 		t.Fatal("ParseSignedData.Verify() error =", err)
 	}
-	if !reflect.DeepEqual(verifiedSigners, signed.Certificates[:1]) {
-		t.Fatalf("ParseSignedData.Verify() = %v, want %v", verifiedSigners, signed.Certificates[:1])
+	if !reflect.DeepEqual(verifiedCertChains[0], signed.Certificates) {
+		t.Fatalf("ParseSignedData.Verify() = %v, want %v", verifiedCertChains, signed.Certificates[:1])
 	}
 }
 
@@ -372,7 +372,7 @@ func TestVerifyAttributes(t *testing.T) {
 				t.Fatal("ParseSignedData() error =", err)
 			}
 
-			err = signed.verifySignedAttributes(&signed.SignerInfos[0], [][]*x509.Certificate{signed.Certificates})
+			_, err = signed.verifySignedAttributes(&signed.SignerInfos[0], [][]*x509.Certificate{signed.Certificates})
 			if testcase.wantErr && err == nil {
 				t.Errorf("ParseSignedData.Verify() error = %v, wantErr %v", err, true)
 			} else if !testcase.wantErr && err != nil {

@@ -95,7 +95,7 @@ func ParseSignedData(berData []byte) (*ParsedSignedData, error) {
 //   - RFC 5652 5.6 Signature Verification Process
 //
 // WARNING: this function doesn't do any revocation checking.
-func (d *ParsedSignedData) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x509.Certificate, error) {
+func (d *ParsedSignedData) Verify(ctx context.Context, opts x509.VerifyOptions) ([][]*x509.Certificate, error) {
 	if len(d.SignerInfos) == 0 {
 		return nil, ErrSignerInfoNotFound
 	}
@@ -108,7 +108,7 @@ func (d *ParsedSignedData) Verify(ctx context.Context, opts x509.VerifyOptions) 
 		intermediates.AddCert(cert)
 	}
 	opts.Intermediates = intermediates
-	verifiedSignerMap := map[string]*x509.Certificate{}
+	verifiedSignerMap := map[string][]*x509.Certificate{}
 	var lastErr error
 	for _, signerInfo := range d.SignerInfos {
 		signingCertificate := d.GetCertificate(signerInfo.SignerIdentifier)
@@ -117,28 +117,28 @@ func (d *ParsedSignedData) Verify(ctx context.Context, opts x509.VerifyOptions) 
 			continue
 		}
 
-		cert, err := d.VerifySigner(ctx, &signerInfo, signingCertificate, opts)
+		certChain, err := d.VerifySigner(ctx, &signerInfo, signingCertificate, opts)
 		if err != nil {
 			lastErr = err
 			continue
 		}
 
-		thumbprint, err := hashutil.ComputeHash(crypto.SHA256, cert.Raw)
+		thumbprint, err := hashutil.ComputeHash(crypto.SHA256, signingCertificate.Raw)
 		if err != nil {
 			lastErr = err
 			continue
 		}
-		verifiedSignerMap[hex.EncodeToString(thumbprint)] = cert
+		verifiedSignerMap[hex.EncodeToString(thumbprint)] = certChain
 	}
 	if len(verifiedSignerMap) == 0 {
 		return nil, lastErr
 	}
 
-	verifiedSigningCertificates := make([]*x509.Certificate, 0, len(verifiedSignerMap))
-	for _, cert := range verifiedSignerMap {
-		verifiedSigningCertificates = append(verifiedSigningCertificates, cert)
+	verifiedSigningCertChains := make([][]*x509.Certificate, 0, len(verifiedSignerMap))
+	for _, certChain := range verifiedSignerMap {
+		verifiedSigningCertChains = append(verifiedSigningCertChains, certChain)
 	}
-	return verifiedSigningCertificates, nil
+	return verifiedSigningCertChains, nil
 }
 
 // VerifySigner verifies the signerInfo against the user specified signingCertificate.
@@ -161,7 +161,7 @@ func (d *ParsedSignedData) Verify(ctx context.Context, opts x509.VerifyOptions) 
 //   - RFC 5652 5.6 Signature Verification Process
 //
 // WARNING: this function doesn't do any revocation checking.
-func (d *ParsedSignedData) VerifySigner(ctx context.Context, signerInfo *SignerInfo, signingCertificate *x509.Certificate, opts x509.VerifyOptions) (*x509.Certificate, error) {
+func (d *ParsedSignedData) VerifySigner(ctx context.Context, signerInfo *SignerInfo, signingCertificate *x509.Certificate, opts x509.VerifyOptions) ([]*x509.Certificate, error) {
 	if signerInfo == nil {
 		return nil, VerificationError{Message: "VerifySigner failed: signer info is required"}
 	}
@@ -183,11 +183,11 @@ func (d *ParsedSignedData) VerifySigner(ctx context.Context, signerInfo *SignerI
 // References:
 //   - RFC 5652 5.4 Message Digest Calculation Process
 //   - RFC 5652 5.6 Signature Verification Process
-func (d *ParsedSignedData) verify(signerInfo *SignerInfo, cert *x509.Certificate, opts *x509.VerifyOptions) (*x509.Certificate, error) {
+func (d *ParsedSignedData) verify(signerInfo *SignerInfo, cert *x509.Certificate, opts *x509.VerifyOptions) ([]*x509.Certificate, error) {
 	// verify signer certificate
 	certChains, err := cert.Verify(*opts)
 	if err != nil {
-		return cert, VerificationError{Detail: err}
+		return nil, VerificationError{Detail: err}
 	}
 
 	// verify signature
@@ -196,7 +196,7 @@ func (d *ParsedSignedData) verify(signerInfo *SignerInfo, cert *x509.Certificate
 	}
 
 	// verify attribute
-	return cert, d.verifySignedAttributes(signerInfo, certChains)
+	return d.verifySignedAttributes(signerInfo, certChains)
 }
 
 // verifySignature verifies the signature with a trusted certificate.
@@ -234,59 +234,63 @@ func (d *ParsedSignedData) verifySignature(signerInfo *SignerInfo, cert *x509.Ce
 // References:
 //   - RFC 5652 5.3 SignerInfo Type
 //   - RFC 5652 5.6 Signature Verification Process
-func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains [][]*x509.Certificate) error {
+func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains [][]*x509.Certificate) ([]*x509.Certificate, error) {
+	if len(chains) == 0 {
+		return nil, VerificationError{Message: "Failed to verify signed attributes because the certificate chain is empty."}
+	}
+
 	// verify attributes if present
 	if len(signerInfo.SignedAttributes) == 0 {
 		if d.ContentType.Equal(oid.Data) {
-			return nil
+			return nil, nil
 		}
 		// signed attributes MUST be present if the content type of the
 		// EncapsulatedContentInfo value being signed is not id-data.
-		return VerificationError{Message: "missing signed attributes"}
+		return nil, VerificationError{Message: "missing signed attributes"}
 	}
 
 	var contentType asn1.ObjectIdentifier
 	if err := signerInfo.SignedAttributes.TryGet(oid.ContentType, &contentType); err != nil {
-		return VerificationError{Message: "invalid content type", Detail: err}
+		return nil, VerificationError{Message: "invalid content type", Detail: err}
 	}
 	if !d.ContentType.Equal(contentType) {
-		return VerificationError{Message: fmt.Sprintf("mismatch content type: found %q in signer info, and %q in signed data", contentType, d.ContentType)}
+		return nil, VerificationError{Message: fmt.Sprintf("mismatch content type: found %q in signer info, and %q in signed data", contentType, d.ContentType)}
 	}
 
 	var expectedDigest []byte
 	if err := signerInfo.SignedAttributes.TryGet(oid.MessageDigest, &expectedDigest); err != nil {
-		return VerificationError{Message: "invalid message digest", Detail: err}
+		return nil, VerificationError{Message: "invalid message digest", Detail: err}
 	}
 	hash, ok := oid.ToHash(signerInfo.DigestAlgorithm.Algorithm)
 	if !ok {
-		return VerificationError{Message: "unsupported digest algorithm"}
+		return nil, VerificationError{Message: "unsupported digest algorithm"}
 	}
 	actualDigest, err := hashutil.ComputeHash(hash, d.Content)
 	if err != nil {
-		return VerificationError{Message: "hash failure", Detail: err}
+		return nil, VerificationError{Message: "hash failure", Detail: err}
 	}
 	if !bytes.Equal(expectedDigest, actualDigest) {
-		return VerificationError{Message: "mismatch message digest"}
+		return nil, VerificationError{Message: "mismatch message digest"}
 	}
 
 	// sanity check on signing time
 	var signingTime time.Time
 	if err := signerInfo.SignedAttributes.TryGet(oid.SigningTime, &signingTime); err != nil {
 		if errors.Is(err, ErrAttributeNotFound) {
-			return nil
+			return chains[0], nil
 		}
-		return VerificationError{Message: "invalid signing time", Detail: err}
+		return nil, VerificationError{Message: "invalid signing time", Detail: err}
 	}
 
 	// verify signing time is within the validity period of all certificates
 	// in the chain. As long as one chain is valid, the signature is valid.
 	for _, chain := range chains {
 		if isSigningTimeValid(chain, signingTime) {
-			return nil
+			return chain, nil
 		}
 	}
 
-	return VerificationError{Message: fmt.Sprintf("signing time, %s, is outside certificate's validity period", signingTime)}
+	return nil, VerificationError{Message: fmt.Sprintf("signing time, %s, is outside certificate's validity period", signingTime)}
 }
 
 // isSigningTimeValid helpes to check if signingTime is within the validity

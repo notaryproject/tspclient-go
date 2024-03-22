@@ -124,8 +124,8 @@ func TestHTTPTimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Verify() error =", err)
 	}
-	if got := len(certs); got != 1 {
-		t.Fatalf("SignedToken.Verify() len([]*x509.Certificate) = %v, want %v", got, 1)
+	if got := len(certs); got != 4 {
+		t.Fatalf("SignedToken.Verify() len([]*x509.Certificate) = %v, want %v", got, 4)
 	}
 	certThumbprint, err := hashutil.ComputeHash(crypto.SHA256, certs[0].Raw)
 	if err != nil {
