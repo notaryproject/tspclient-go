@@ -172,9 +172,9 @@ type Attribute struct {
 // Attributes ::= SET SIZE (0..MAX) OF Attribute
 type Attributes []Attribute
 
-// TryGet tries to find the attribute by the given identifier, parse and store
+// Get tries to find the attribute by the given identifier, parse and store
 // the result in the value pointed to by out.
-func (a *Attributes) TryGet(identifier asn1.ObjectIdentifier, out interface{}) error {
+func (a *Attributes) Get(identifier asn1.ObjectIdentifier, out interface{}) error {
 	for _, attribute := range *a {
 		if identifier.Equal(attribute.Type) {
 			_, err := asn1.Unmarshal(attribute.Values.Bytes, out)

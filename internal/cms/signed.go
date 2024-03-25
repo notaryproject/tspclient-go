@@ -250,7 +250,7 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 	}
 
 	var contentType asn1.ObjectIdentifier
-	if err := signerInfo.SignedAttributes.TryGet(oid.ContentType, &contentType); err != nil {
+	if err := signerInfo.SignedAttributes.Get(oid.ContentType, &contentType); err != nil {
 		return nil, VerificationError{Message: "invalid content type", Detail: err}
 	}
 	if !d.ContentType.Equal(contentType) {
@@ -258,7 +258,7 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 	}
 
 	var expectedDigest []byte
-	if err := signerInfo.SignedAttributes.TryGet(oid.MessageDigest, &expectedDigest); err != nil {
+	if err := signerInfo.SignedAttributes.Get(oid.MessageDigest, &expectedDigest); err != nil {
 		return nil, VerificationError{Message: "invalid message digest", Detail: err}
 	}
 	hash, ok := oid.ToHash(signerInfo.DigestAlgorithm.Algorithm)
@@ -275,7 +275,7 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 
 	// sanity check on signing time
 	var signingTime time.Time
-	if err := signerInfo.SignedAttributes.TryGet(oid.SigningTime, &signingTime); err != nil {
+	if err := signerInfo.SignedAttributes.Get(oid.SigningTime, &signingTime); err != nil {
 		if errors.Is(err, ErrAttributeNotFound) {
 			return chains[0], nil
 		}
