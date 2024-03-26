@@ -152,3 +152,24 @@ func (r *Response) SignedToken() (*SignedToken, error) {
 	}
 	return ParseSignedToken(context.Background(), r.TimeStampToken.FullBytes)
 }
+
+// CheckNonce checks if request nonce matches with the nonce in the response
+func (r *Response) CheckNonce(requestNonce *big.Int) error {
+	// if no nonce is present in the request, skip the check
+	if requestNonce == nil {
+		return nil
+	}
+	token, err := r.SignedToken()
+	if err != nil {
+		return err
+	}
+	info, err := token.Info()
+	if err != nil {
+		return err
+	}
+	responseNonce := info.Nonce
+	if responseNonce.Cmp(requestNonce) != 0 {
+		return fmt.Errorf("nonce in response %s does not match nonce in request %s", responseNonce, requestNonce)
+	}
+	return nil
+}

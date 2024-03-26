@@ -103,5 +103,8 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 	if err := resp.UnmarshalBinary(respBytes); err != nil {
 		return nil, err
 	}
+	if err := resp.CheckNonce(req.Nonce); err != nil {
+		return nil, err
+	}
 	return &resp, nil
 }
