@@ -22,8 +22,8 @@ import (
 	"net/url"
 )
 
-// maxBodyLength specifies the max content can be received from the possibly
-// malicious remote server.
+// maxBodyLength specifies the max content can be received from the remote
+// server.
 // The legnth of a regular TSA response with certificates is usually less than
 // 10 KiB.
 var maxBodyLength = 1 * 1024 * 1024 // 1 MiB
@@ -103,7 +103,7 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 		return nil, err
 	}
 	if lr.N == 0 {
-		return nil, fmt.Errorf("%s %q: https response reached the %d MiB size limit", hResp.Request.Method, hResp.Request.URL, maxBodyLength/1024/1024)
+		return nil, fmt.Errorf("%s %q: unexpected large http response, max response body size allowed is %d MiB", hResp.Request.Method, hResp.Request.URL, maxBodyLength/1024/1024)
 	}
 	var resp Response
 	if err := resp.UnmarshalBinary(respBytes); err != nil {

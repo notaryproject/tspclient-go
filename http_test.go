@@ -394,7 +394,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPTimestamper() error = %v", err)
 	}
-	expectedErrMsg = "https response reached the 0 MiB size limit"
+	expectedErrMsg = "unexpected large http response, max response body size allowed is 0 MiB"
 	if _, err := tsa.Timestamp(context.Background(), req); err == nil || !strings.Contains(err.Error(), expectedErrMsg) {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
