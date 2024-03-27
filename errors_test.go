@@ -26,6 +26,40 @@ func TestMalformedRequestError(t *testing.T) {
 	if newErr.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
 	}
+
+	newErr = MalformedRequestError{
+		Detail: errTestInner,
+	}
+	expectedErrMsg = "malformed timestamping request: test inner error"
+	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+	innerErr := newErr.Unwrap()
+	expectedErrMsg = "test inner error"
+	if innerErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, innerErr)
+	}
+}
+
+func TestInvalidResponseError(t *testing.T) {
+	newErr := InvalidResponseError{}
+	expectedErrMsg := "invalid timestamping response"
+	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+
+	newErr = InvalidResponseError{
+		Detail: errTestInner,
+	}
+	expectedErrMsg = "invalid timestamping response: test inner error"
+	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+	innerErr := newErr.Unwrap()
+	expectedErrMsg = "test inner error"
+	if innerErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, innerErr)
+	}
 }
 
 func TestSignedTokenVerificationError(t *testing.T) {
@@ -35,15 +69,37 @@ func TestSignedTokenVerificationError(t *testing.T) {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
 	}
 
-	newErr = SignedTokenVerificationError{Detail: errTestInner}
+	newErr = SignedTokenVerificationError{
+		Detail: errTestInner,
+	}
 	expectedErrMsg = "failed to verify signed token: test inner error"
 	if newErr.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
 	}
-
 	innerErr := newErr.Unwrap()
 	expectedErrMsg = "test inner error"
 	if innerErr.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+}
+
+func TestTSTInfoError(t *testing.T) {
+	newErr := TSTInfoError{}
+	expectedErrMsg := "invalid TSTInfo"
+	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+
+	newErr = TSTInfoError{
+		Detail: errTestInner,
+	}
+	expectedErrMsg = "invalid TSTInfo: test inner error"
+	if newErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, newErr)
+	}
+	innerErr := newErr.Unwrap()
+	expectedErrMsg = "test inner error"
+	if innerErr.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, innerErr)
 	}
 }

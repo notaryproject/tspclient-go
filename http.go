@@ -59,8 +59,14 @@ func NewHTTPTimestamper(rt http.RoundTripper, endpoint string) (Timestamper, err
 }
 
 // Timestamp sends the request to the remote TSA server for timestamping.
+//
 // Reference: RFC 3161 3.4 Time-Stamp Protocol via HTTP
 func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Response, error) {
+	// sanity check
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	// prepare for http request
 	reqBytes, err := req.MarshalBinary()
 	if err != nil {
@@ -81,13 +87,13 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 
 	// verify HTTP response
 	if hResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s %q: https response bad status: %s", http.MethodPost, ts.endpoint, hResp.Status)
+		return nil, fmt.Errorf("%s %q: https response bad status: %s with response body: %v", http.MethodPost, ts.endpoint, hResp.Status, hResp.Body)
 	}
 	if contentType := hResp.Header.Get("Content-Type"); contentType != TimestampReply {
 		return nil, fmt.Errorf("%s %q: unexpected response content type: %s", http.MethodPost, ts.endpoint, contentType)
 	}
 
-	// read response
+	// read TSA response
 	lr := &io.LimitedReader{
 		R: hResp.Body,
 		N: int64(maxBodyLength),
@@ -103,7 +109,8 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 	if err := resp.UnmarshalBinary(respBytes); err != nil {
 		return nil, err
 	}
-	if err := resp.CheckNonce(req.Nonce); err != nil {
+	// validate response against RFC 3161
+	if err := resp.Validate(req); err != nil {
 		return nil, err
 	}
 	return &resp, nil

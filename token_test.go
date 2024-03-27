@@ -15,13 +15,13 @@ package tspclient
 
 import (
 	"context"
-	"crypto"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/internal/oid"
 )
 
@@ -99,15 +99,6 @@ func TestInfo(t *testing.T) {
 	if _, err := timestampToken.Info(); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
-
-	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithTSTInfoVersion2.p7s")
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectedErrMsg = "timestamp token info version must be 1, but got 2"
-	if _, err := timestampToken.Info(); err == nil || err.Error() != expectedErrMsg {
-		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
-	}
 }
 
 func TestGetSigningCertificate(t *testing.T) {
@@ -116,7 +107,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg := "failed to get SigningCertificateV2 from signed attributes: attribute not found"
-	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -125,7 +116,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "issuer name is missing in IssuerSerial of SigningCertificateV2 attribute"
-	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -133,7 +124,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err != nil {
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
 
@@ -142,7 +133,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "signing certificate not found in the timestamp token"
-	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -151,7 +142,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "unsupported certificate hash algorithm in SigningCertificateV2 attribute"
-	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -160,13 +151,12 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "signing certificate hash does not match CertHash in SigningCertificateV2 attribute"
-	if _, err := timestampToken.GetSigningCertificate(context.Background(), &timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 }
 
-func TestVerifyContent(t *testing.T) {
-	message := []byte("notation")
+func TestTimestamp(t *testing.T) {
 	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
 	if err != nil {
 		t.Fatal(err)
@@ -175,8 +165,55 @@ func TestVerifyContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := tstInfo.VerifyContent(message); err != nil {
+	expectedErrMsg := "invalid TSTInfo: mismatched message"
+	if _, _, err := tstInfo.Timestamp([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tstInfo, err = timestampToken.Info()
+	if err != nil {
+		t.Fatal(err)
+	}
+	timestamp, accuracy, err := tstInfo.Timestamp([]byte("notation"))
+	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
+	}
+	expectedTimestamp := time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC)
+	if timestamp != expectedTimestamp {
+		t.Fatalf("expected timestamp %s, but got %s", expectedTimestamp, timestamp)
+	}
+	if accuracy.Seconds() != 1 {
+		t.Fatalf("expected 1s accuracy, but got %s", accuracy)
+	}
+}
+
+func TestValidateInfo(t *testing.T) {
+	message := []byte("notation")
+	var tstInfoErr *TSTInfoError
+
+	var tstInfo *TSTInfo
+	expectedErrMsg := "invalid TSTInfo: timestamp token info cannot be nil"
+	err := tstInfo.Validate(message)
+	if err == nil || !errors.As(err, &tstInfoErr) || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampTokenWithTSTInfoVersion2.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tstInfo, err = timestampToken.Info()
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedErrMsg = "invalid TSTInfo: timestamp token info version must be 1, but got 2"
+	err = tstInfo.Validate(message)
+	if err == nil || !errors.As(err, &tstInfoErr) || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
 	timestampToken, err = getTimestampTokenFromPath("testdata/SHA1TimeStampToken.p7s")
@@ -187,33 +224,34 @@ func TestVerifyContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg := "unrecognized hash algorithm: 1.2.840.113549.1.1.5"
-	if err := tstInfo.VerifyContent(message); err == nil || err.Error() != expectedErrMsg {
+	expectedErrMsg = "invalid TSTInfo: unrecognized hash algorithm: 1.2.840.113549.1.1.5"
+	if err := tstInfo.Validate(message); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
-}
 
-func TestTSTInfoVerify(t *testing.T) {
-	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
-	tstInfo, err := timestampToken.Info()
+	tstInfo, err = timestampToken.Info()
 	if err != nil {
 		t.Fatal(err)
 	}
-	messageDigest, err := hashutil.ComputeHash(crypto.SHA256, []byte("notation"))
+	expectedErrMsg = "invalid TSTInfo: mismatched message"
+	if err := tstInfo.Validate([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := tstInfo.Verify(messageDigest); err != nil {
+	tstInfo, err = timestampToken.Info()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tstInfo.Validate(message); err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
-	}
-
-	messageDigest = []byte("invalid")
-	expectedErrMsg := "mismatch message digest"
-	if err := tstInfo.Verify(messageDigest); err == nil || err.Error() != expectedErrMsg {
-		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 }
 

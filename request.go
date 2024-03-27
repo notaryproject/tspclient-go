@@ -53,41 +53,63 @@ type Request struct {
 	Extensions     []pkix.Extension      `asn1:"optional,tag:0"`
 }
 
-// NewRequest creates a request sent to TSA based on the given digest and
-// hash algorithm.
-//
-// Parameters:
-// digest - hashedMessage of timestamping request's messageImprint
-// alg - hashing algorithm. Supported values are SHA256, SHA384, and SHA512
-func NewRequest(digest []byte, alg crypto.Hash) (*Request, error) {
-	hashAlg, err := oid.FromHash(alg)
-	if err != nil {
-		return nil, MalformedRequestError{Msg: err.Error()}
+// RequestOptions provides options for user to create a new timestamp request
+type RequestOptions struct {
+	// Content is the datum to be time stamped. REQUIRED.
+	Content []byte
+
+	// HashAlgorithm is the hash algorithm to be used to hash the Content.
+	// REQUIRED and MUST be an available hash algorithm.
+	HashAlgorithm crypto.Hash
+
+	// HashAlgorithmParameters is the parameters for the HashAlgorithm.
+	// OPTIONAL.
+	HashAlgorithmParameters asn1.RawValue
+
+	// ReqPolicy specifies the TSA policy ID. OPTIONAL.
+	ReqPolicy asn1.ObjectIdentifier
+
+	// Nonce is a large random number with a high probability that the client
+	// generates it only once. The same nonce is included and validated in the
+	// response. OPTIONAL.
+	Nonce *big.Int
+
+	// CertReq determines if TSA signing certificate is included in the response.
+	// OPTIONAL.
+	CertReq bool
+
+	// Extensions is a generic way to add additional information
+	// to the request in the future. OPTIONAL.
+	Extensions []pkix.Extension
+}
+
+// NewRequest creates a timestamp request based on user provided options.
+func NewRequest(opts RequestOptions) (*Request, error) {
+	if opts.Content == nil {
+		return nil, &MalformedRequestError{Msg: "content to be time stamped cannot be empty"}
 	}
-	if len(digest) != alg.Size() {
-		return nil, MalformedRequestError{Msg: fmt.Sprintf("digest is of incorrect size: %d", len(digest))}
+	hashAlg, err := oid.FromHash(opts.HashAlgorithm)
+	if err != nil {
+		return nil, &MalformedRequestError{Msg: err.Error()}
+	}
+	digest, err := hashutil.ComputeHash(opts.HashAlgorithm, opts.Content)
+	if err != nil {
+		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
 	return &Request{
 		Version: 1,
 		MessageImprint: MessageImprint{
 			HashAlgorithm: pkix.AlgorithmIdentifier{
-				Algorithm: hashAlg,
+				Algorithm:  hashAlg,
+				Parameters: opts.HashAlgorithmParameters,
 			},
 			HashedMessage: digest,
 		},
-		CertReq: true,
+		ReqPolicy:  opts.ReqPolicy,
+		Nonce:      opts.Nonce,
+		CertReq:    opts.CertReq,
+		Extensions: opts.Extensions,
 	}, nil
-}
-
-// NewRequestFromContent creates a request based on the given content
-// and hash algorithm.
-func NewRequestFromContent(content []byte, alg crypto.Hash) (*Request, error) {
-	digest, err := hashutil.ComputeHash(alg, content)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewRequest(digest, alg)
 }
 
 // MarshalBinary encodes the request to binary form.
@@ -108,4 +130,24 @@ func (r *Request) MarshalBinary() ([]byte, error) {
 func (r *Request) UnmarshalBinary(data []byte) error {
 	_, err := asn1.Unmarshal(data, r)
 	return err
+}
+
+// Validate checks if req is a valid request against RFC 3161.
+// It is used before a timstamp requestor sending the request to TSA.
+func (req *Request) Validate() error {
+	if req == nil {
+		return &MalformedRequestError{Msg: "request cannot be nil"}
+	}
+	if req.Version != 1 {
+		return &MalformedRequestError{Msg: fmt.Sprintf("request version must be 1, but got %d", req.Version)}
+	}
+	hashAlg := req.MessageImprint.HashAlgorithm.Algorithm
+	hash, available := oid.ToHash(hashAlg)
+	if !available {
+		return &MalformedRequestError{Msg: fmt.Sprintf("hash algorithm %v is unavailable", hashAlg)}
+	}
+	if hash.Size() != len(req.MessageImprint.HashedMessage) {
+		return &MalformedRequestError{Msg: fmt.Sprintf("hashed message is of incorrect size %d", len(req.MessageImprint.HashedMessage))}
+	}
+	return nil
 }

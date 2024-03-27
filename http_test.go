@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -31,32 +30,6 @@ import (
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/pki"
 )
-
-var testRequest = []byte{
-	// Request
-	0x30, 0x37,
-
-	// Version
-	0x02, 0x01, 0x01,
-
-	// MessageImprint
-	0x30, 0x2f,
-
-	// MessageImprint.HashAlgorithm
-	0x30, 0x0b,
-
-	// MessageImprint.HashAlgorithm.Algorithm
-	0x06, 0x09,
-	0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
-
-	// MessageImprint.HashedMessage
-	0x04, 0x20,
-	0x83, 0x26, 0xf4, 0x70, 0x9d, 0x40, 0x1d, 0xfa, 0xbf, 0xa7, 0x83, 0x02, 0xfb, 0x1c, 0xde, 0xa0,
-	0xf1, 0x80, 0x48, 0xa4, 0x40, 0x40, 0xc2, 0x12, 0xbd, 0x8e, 0x28, 0xda, 0x6b, 0xc6, 0x51, 0xc7,
-
-	// CertReq
-	0x01, 0x01, 0xff,
-}
 
 func TestHTTPTimestampGranted(t *testing.T) {
 	// setup test server
@@ -69,10 +42,8 @@ func TestHTTPTimestampGranted(t *testing.T) {
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
-		if got, err := io.ReadAll(r.Body); err != nil {
+		if _, err := io.ReadAll(r.Body); err != nil {
 			t.Fatalf("TimeStampRequest.Body read error = %v", err)
-		} else if !bytes.Equal(got, testRequest) {
-			t.Fatalf("TimeStampRequest.Body = %v, want %v", got, testRequest)
 		}
 
 		// write reply
@@ -89,9 +60,18 @@ func TestHTTPTimestampGranted(t *testing.T) {
 		t.Fatalf("NewHTTPTimestamper() error = %v", err)
 	}
 	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       message,
+		HashAlgorithm: crypto.SHA256,
+		HashAlgorithmParameters: asn1.RawValue{
+			Tag:       5,
+			FullBytes: []byte{5, 0},
+		},
+		CertReq: true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	ctx := context.Background()
 	resp, err := tsa.Timestamp(ctx, req)
@@ -142,10 +122,10 @@ func TestHTTPTimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	if err := info.VerifyContent(message); err != nil {
-		t.Errorf("TSTInfo.Verify() error = %v", err)
+	timestamp, accuracy, err := info.Timestamp(message)
+	if err != nil {
+		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}
-	timestamp, accuracy := info.Timestamp()
 	wantTimestamp := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
 	if timestamp != wantTimestamp {
 		t.Errorf("TSTInfo.Timestamp() Timestamp = %v, want %v", timestamp, wantTimestamp)
@@ -167,10 +147,8 @@ func TestHTTPTimestampRejection(t *testing.T) {
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
-		if got, err := io.ReadAll(r.Body); err != nil {
+		if _, err := io.ReadAll(r.Body); err != nil {
 			t.Fatalf("TimeStampRequest.Body read error = %v", err)
-		} else if !bytes.Equal(got, testRequest) {
-			t.Fatalf("TimeStampRequest.Body = %v, want %v", got, testRequest)
 		}
 
 		// write reply
@@ -186,30 +164,24 @@ func TestHTTPTimestampRejection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPTimestamper() error = %v", err)
 	}
-	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		HashAlgorithmParameters: asn1.RawValue{
+			Tag:       5,
+			FullBytes: []byte{5, 0},
+		},
+		CertReq: true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	ctx := context.Background()
-	resp, err := tsa.Timestamp(ctx, req)
-	if err != nil {
-		t.Fatalf("httpTimestamper.Timestamp() error = %v", err)
-	}
-	wantStatus := pki.StatusRejection
-	if got := resp.Status.Status; got != wantStatus {
-		t.Fatalf("Response.Status = %v, want %v", got, wantStatus)
-	}
-	wantStatusString := []string{"request contains unknown algorithm"}
-	if got := resp.Status.StatusString; !reflect.DeepEqual(got, wantStatusString) {
-		t.Fatalf("Response.StatusString = %v, want %v", got, wantStatusString)
-	}
-	wantFailInfo := asn1.BitString{
-		Bytes:     []byte{0x80},
-		BitLength: 1,
-	}
-	if got := resp.Status.FailInfo; !reflect.DeepEqual(got, wantFailInfo) {
-		t.Fatalf("Response.FailInfo = %v, want %v", got, wantFailInfo)
+	expectedErrMsg := "invalid timestamping response: invalid response with status code 2: rejected. Failure info: unrecognized or unsupported Algorithm Identifier"
+	_, err = tsa.Timestamp(ctx, req)
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 }
 
@@ -229,10 +201,18 @@ func TestHTTPTimestampBadEndpoint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPTimestamper() error = %v", err)
 	}
-	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		HashAlgorithmParameters: asn1.RawValue{
+			Tag:       5,
+			FullBytes: []byte{5, 0},
+		},
+		CertReq: true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	ctx := context.Background()
 	_, err = tsa.Timestamp(ctx, req)
@@ -253,10 +233,18 @@ func TestHTTPTimestampEndpointNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPTimestamper() error = %v", err)
 	}
-	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		HashAlgorithmParameters: asn1.RawValue{
+			Tag:       5,
+			FullBytes: []byte{5, 0},
+		},
+		CertReq: true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	ctx := context.Background()
 	_, err = tsa.Timestamp(ctx, req)
@@ -284,10 +272,8 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
-		if got, err := io.ReadAll(r.Body); err != nil {
+		if _, err := io.ReadAll(r.Body); err != nil {
 			t.Fatalf("TimeStampRequest.Body read error = %v", err)
-		} else if !bytes.Equal(got, testRequest) {
-			t.Fatalf("TimeStampRequest.Body = %v, want %v", got, testRequest)
 		}
 
 		// write reply
@@ -301,15 +287,22 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewHTTPTimestamper() error = %v", err)
 	}
-	expectedErrMsg := "nil request"
+	expectedErrMsg := "malformed timestamping request: request cannot be nil"
 	if _, err := tsa.Timestamp(context.Background(), nil); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
-
-	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		HashAlgorithmParameters: asn1.RawValue{
+			Tag:       5,
+			FullBytes: []byte{5, 0},
+		},
+		CertReq: true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	expectedErrMsg = "net/http: nil Context"
 	if _, err := tsa.Timestamp(nil, req); err == nil || err.Error() != expectedErrMsg {
@@ -321,10 +314,8 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
-		if got, err := io.ReadAll(r.Body); err != nil {
+		if _, err := io.ReadAll(r.Body); err != nil {
 			t.Fatalf("TimeStampRequest.Body read error = %v", err)
-		} else if !bytes.Equal(got, testRequest) {
-			t.Fatalf("TimeStampRequest.Body = %v, want %v", got, testRequest)
 		}
 
 		// write reply
@@ -349,10 +340,8 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
-		if got, err := io.ReadAll(r.Body); err != nil {
+		if _, err := io.ReadAll(r.Body); err != nil {
 			t.Fatalf("TimeStampRequest.Body read error = %v", err)
-		} else if !bytes.Equal(got, testRequest) {
-			t.Fatalf("TimeStampRequest.Body = %v, want %v", got, testRequest)
 		}
 
 		// write reply
@@ -380,10 +369,8 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
-		if got, err := io.ReadAll(r.Body); err != nil {
+		if _, err := io.ReadAll(r.Body); err != nil {
 			t.Fatalf("TimeStampRequest.Body read error = %v", err)
-		} else if !bytes.Equal(got, testRequest) {
-			t.Fatalf("TimeStampRequest.Body = %v, want %v", got, testRequest)
 		}
 
 		// write reply

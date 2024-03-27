@@ -19,15 +19,48 @@ type CertificateNotFoundError error
 
 // MalformedRequestError is used when timestamping request is malformed.
 type MalformedRequestError struct {
-	Msg string
+	Msg    string
+	Detail error
 }
 
 // Error returns error message.
 func (e MalformedRequestError) Error() string {
+	msg := "malformed timestamping request"
 	if e.Msg != "" {
-		return e.Msg
+		msg += ": " + e.Msg
 	}
-	return "malformed timestamping request"
+	if e.Detail != nil {
+		msg += ": " + e.Detail.Error()
+	}
+	return msg
+}
+
+// Unwrap returns the internal error.
+func (e MalformedRequestError) Unwrap() error {
+	return e.Detail
+}
+
+// InvalidResponseError is used when timestamping response is invalid.
+type InvalidResponseError struct {
+	Msg    string
+	Detail error
+}
+
+// Error returns error message.
+func (e InvalidResponseError) Error() string {
+	msg := "invalid timestamping response"
+	if e.Msg != "" {
+		msg += ": " + e.Msg
+	}
+	if e.Detail != nil {
+		msg += ": " + e.Detail.Error()
+	}
+	return msg
+}
+
+// Unwrap returns the internal error.
+func (e InvalidResponseError) Unwrap() error {
+	return e.Detail
 }
 
 // SignedTokenVerificationError is used when fail to verify signed token.
@@ -50,5 +83,28 @@ func (e SignedTokenVerificationError) Error() string {
 
 // Unwrap returns the internal error.
 func (e SignedTokenVerificationError) Unwrap() error {
+	return e.Detail
+}
+
+// TSTInfoError is used when fail to verify signed token.
+type TSTInfoError struct {
+	Msg    string
+	Detail error
+}
+
+// Error returns error message.
+func (e TSTInfoError) Error() string {
+	msg := "invalid TSTInfo"
+	if e.Msg != "" {
+		msg += ": " + e.Msg
+	}
+	if e.Detail != nil {
+		msg += ": " + e.Detail.Error()
+	}
+	return msg
+}
+
+// Unwrap returns the internal error.
+func (e TSTInfoError) Unwrap() error {
 	return e.Detail
 }

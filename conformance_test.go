@@ -70,9 +70,14 @@ func TestTSATimestampGranted(t *testing.T) {
 
 	// do timestamp
 	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       message,
+		HashAlgorithm: crypto.SHA256,
+		CertReq:       true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	ctx := context.Background()
 	resp, err := tsa.Timestamp(ctx, req)
@@ -101,10 +106,10 @@ func TestTSATimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	if err := info.VerifyContent(message); err != nil {
-		t.Errorf("TSTInfo.Verify() error = %v", err)
+	ts, accuracy, err := info.Timestamp(message)
+	if err != nil {
+		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}
-	ts, accuracy := info.Timestamp()
 	wantTimestamp := now
 	if ts != wantTimestamp {
 		t.Errorf("TSTInfo.Timestamp() Timestamp = %v, want %v", ts, wantTimestamp)
@@ -123,10 +128,14 @@ func TestTSATimestampRejection(t *testing.T) {
 	}
 
 	// do timestamp
-	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		CertReq:       true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	req.MessageImprint.HashAlgorithm.Algorithm = sha1WithRSA // set bad algorithm
 	ctx := context.Background()
@@ -152,10 +161,14 @@ func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
 	}
 
 	// do timestamp
-	message := []byte("notation")
-	req, err := NewRequestFromContent(message, crypto.SHA256)
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		CertReq:       true,
+	}
+	req, err := NewRequest(requestOpts)
 	if err != nil {
-		t.Fatalf("NewRequestFromContent() error = %v", err)
+		t.Fatalf("NewRequest() error = %v", err)
 	}
 	ctx := context.Background()
 	resp, err := tsa.Timestamp(ctx, req)
@@ -179,6 +192,55 @@ func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
 	}
 	expectedErrMsg := "failed to verify signed token: signing certificate MUST only have ExtKeyUsageTimeStamping as extended key usage"
 	if _, err := token.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+}
+
+func TestTSATimestampWithoutCertificate(t *testing.T) {
+	// prepare TSA
+	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
+	tsa, err := newTestTSA(false)
+	if err != nil {
+		t.Fatalf("NewTSA() error = %v", err)
+	}
+	tsa.nowFunc = func() time.Time {
+		return now
+	}
+
+	// do timestamp
+	message := []byte("notation")
+	requestOpts := RequestOptions{
+		Content:       message,
+		HashAlgorithm: crypto.SHA256,
+		CertReq:       false,
+	}
+	req, err := NewRequest(requestOpts)
+	if err != nil {
+		t.Fatalf("NewRequest() error = %v", err)
+	}
+	ctx := context.Background()
+	resp, err := tsa.Timestamp(ctx, req)
+	if err != nil {
+		t.Fatalf("TSA.Timestamp() error = %v", err)
+	}
+	wantStatus := pki.StatusGranted
+	if got := resp.Status.Status; got != wantStatus {
+		t.Fatalf("Response.Status = %v, want %v", got, wantStatus)
+	}
+
+	// verify timestamp token
+	token, err := resp.SignedToken()
+	if err != nil {
+		t.Fatalf("Response.SignedToken() error = %v", err)
+	}
+	roots := x509.NewCertPool()
+	roots.AddCert(tsa.certificate())
+	opts := x509.VerifyOptions{
+		Roots: roots,
+	}
+	expectedErrMsg := "failed to verify signed token: signing certificate not found in the timestamp token"
+	_, err = token.Verify(context.Background(), opts)
+	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 }

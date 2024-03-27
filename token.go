@@ -66,7 +66,7 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 	signed := (*cms.ParsedSignedData)(t)
 	var lastErr error
 	for _, signerInfo := range t.SignerInfos {
-		signingCertificate, err := t.GetSigningCertificate(ctx, &signerInfo)
+		signingCertificate, err := t.GetSigningCertificate(&signerInfo)
 		if err != nil {
 			lastErr = SignedTokenVerificationError{Detail: err}
 			continue
@@ -89,15 +89,12 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 	return nil, lastErr
 }
 
-// Info returns the timestamping information.
+// Info returns the timestamping information. Caller MUST validate the timestamp
+// token info before consumption.
 func (t *SignedToken) Info() (*TSTInfo, error) {
 	var info TSTInfo
 	if _, err := asn1.Unmarshal(t.Content, &info); err != nil {
 		return nil, err
-	}
-	// RFC 3161 2.4.2 TSTInfo
-	if info.Version != 1 {
-		return nil, fmt.Errorf("timestamp token info version must be 1, but got %d", info.Version)
 	}
 	return &info, nil
 }
@@ -109,7 +106,7 @@ func (t *SignedToken) Info() (*TSTInfo, error) {
 // SigningCertificateV2.
 //
 // References: RFC 3161 2.4.1 & 2.4.2; RFC 5035 4
-func (t *SignedToken) GetSigningCertificate(ctx context.Context, signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
+func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
 	var signingCertificateV2 signingCertificateV2
 	if err := signerInfo.SignedAttributes.TryGet(oid.SigningCertificateV2, &signingCertificateV2); err != nil {
 		return nil, fmt.Errorf("failed to get SigningCertificateV2 from signed attributes: %w", err)
@@ -192,33 +189,38 @@ type TSTInfo struct {
 	Extensions     []pkix.Extension `asn1:"optional,tag:1"`
 }
 
-// VerifyContent verifies the message against the timestamp token information.
-func (tst *TSTInfo) VerifyContent(message []byte) error {
-	hashAlg := tst.MessageImprint.HashAlgorithm.Algorithm
-	hash, ok := oid.ToHash(hashAlg)
-	if !ok {
-		return fmt.Errorf("unrecognized hash algorithm: %v", hashAlg)
-	}
-	messageDigest, err := hashutil.ComputeHash(hash, message)
-	if err != nil {
-		return err
-	}
-
-	return tst.Verify(messageDigest)
-}
-
-// Verify verifies the message digest against the timestamp token information.
-func (tst *TSTInfo) Verify(messageDigest []byte) error {
-	if !bytes.Equal(tst.MessageImprint.HashedMessage, messageDigest) {
-		return errors.New("mismatch message digest")
-	}
-	return nil
-}
-
 // Timestamp returns the timestamp by TSA and its accuracy.
-func (tst *TSTInfo) Timestamp() (time.Time, time.Duration) {
+// tst MUST be valid and the time stamped datum MUST match message.
+func (tst *TSTInfo) Timestamp(message []byte) (time.Time, time.Duration, error) {
+	if err := tst.Validate(message); err != nil {
+		return time.Time{}, 0, err
+	}
 	accuracy := time.Duration(tst.Accuracy.Seconds)*time.Second +
 		time.Duration(tst.Accuracy.Milliseconds)*time.Millisecond +
 		time.Duration(tst.Accuracy.Microseconds)*time.Microsecond
-	return tst.GenTime, accuracy
+	return tst.GenTime, accuracy, nil
+}
+
+// Validate checks tst against RFC 3161.
+// message is verified against the timestamp token MessageImprint.
+func (tst *TSTInfo) Validate(message []byte) error {
+	if tst == nil {
+		return &TSTInfoError{Msg: "timestamp token info cannot be nil"}
+	}
+	if tst.Version != 1 {
+		return &TSTInfoError{Msg: fmt.Sprintf("timestamp token info version must be 1, but got %d", tst.Version)}
+	}
+	hashAlg := tst.MessageImprint.HashAlgorithm.Algorithm
+	hash, ok := oid.ToHash(hashAlg)
+	if !ok {
+		return &TSTInfoError{Msg: fmt.Sprintf("unrecognized hash algorithm: %v", hashAlg)}
+	}
+	messageDigest, err := hashutil.ComputeHash(hash, message)
+	if err != nil {
+		return &TSTInfoError{Detail: err}
+	}
+	if !bytes.Equal(tst.MessageImprint.HashedMessage, messageDigest) {
+		return &TSTInfoError{Msg: "mismatched message"}
+	}
+	return nil
 }

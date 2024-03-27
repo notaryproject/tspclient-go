@@ -14,6 +14,7 @@
 package tspclient
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -137,9 +138,9 @@ func (r *Response) ValidateStatus() error {
 	if r.Status.Status != pki.StatusGranted && r.Status.Status != pki.StatusGrantedWithMods {
 		failureInfo, err := r.Status.ParseFailInfo()
 		if err != nil {
-			return fmt.Errorf("invalid response with status code %d: %s", r.Status.Status, r.Status.Status.String())
+			return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s", r.Status.Status, r.Status.Status.String())}
 		}
-		return fmt.Errorf("invalid response with status code %d: %s. Failure info: %s", r.Status.Status, r.Status.Status.String(), failureInfo)
+		return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s. Failure info: %s", r.Status.Status, r.Status.Status.String(), failureInfo)}
 	}
 	return nil
 }
@@ -153,23 +154,65 @@ func (r *Response) SignedToken() (*SignedToken, error) {
 	return ParseSignedToken(context.Background(), r.TimeStampToken.FullBytes)
 }
 
-// CheckNonce checks if request nonce matches with the nonce in the response
-func (r *Response) CheckNonce(requestNonce *big.Int) error {
-	// if no nonce is present in the request, skip the check
-	if requestNonce == nil {
-		return nil
+// Validate checks if resp is a successful timestamp response against
+// its corresponding request based on RFC 3161.
+// It is used when a timestamp requestor receives the response from TSA.
+func (resp *Response) Validate(req *Request) error {
+	if req == nil {
+		return &InvalidResponseError{Msg: "missing corresponding request"}
 	}
-	token, err := r.SignedToken()
-	if err != nil {
+	if resp == nil {
+		return &InvalidResponseError{Msg: "response cannot be nil"}
+	}
+	if err := resp.ValidateStatus(); err != nil {
 		return err
+	}
+	token, err := resp.SignedToken()
+	if err != nil {
+		return &InvalidResponseError{Detail: err}
 	}
 	info, err := token.Info()
 	if err != nil {
-		return err
+		return &InvalidResponseError{Detail: err}
 	}
-	responseNonce := info.Nonce
-	if responseNonce.Cmp(requestNonce) != 0 {
-		return fmt.Errorf("nonce in response %s does not match nonce in request %s", responseNonce, requestNonce)
+	if info.Version != 1 {
+		return &InvalidResponseError{Msg: fmt.Sprintf("timestamp token info version must be 1, but got %d", info.Version)}
+	}
+	// check policy
+	if req.ReqPolicy != nil && !req.ReqPolicy.Equal(info.Policy) {
+		return &InvalidResponseError{Msg: fmt.Sprintf("policy in response %v does not match policy in request %v", info.Policy, req.ReqPolicy)}
+	}
+	// check MessageImprint
+	paramReq := req.MessageImprint.HashAlgorithm.Parameters
+	paramResp := info.MessageImprint.HashAlgorithm.Parameters
+	if !info.MessageImprint.HashAlgorithm.Algorithm.Equal(req.MessageImprint.HashAlgorithm.Algorithm) ||
+		paramReq.Class != paramResp.Class || paramReq.Tag != paramResp.Tag || paramReq.IsCompound != paramResp.IsCompound ||
+		!bytes.Equal(paramReq.Bytes, paramResp.Bytes) || !bytes.Equal(paramReq.FullBytes, paramResp.FullBytes) ||
+		!bytes.Equal(info.MessageImprint.HashedMessage, req.MessageImprint.HashedMessage) {
+		return &InvalidResponseError{Msg: fmt.Sprintf("message imprint in response %+v does not match with request %+v", info.MessageImprint, req.MessageImprint)}
+	}
+	// check nonce
+	if req.Nonce != nil {
+		responseNonce := info.Nonce
+		if responseNonce == nil || responseNonce.Cmp(req.Nonce) != 0 {
+			return &InvalidResponseError{Msg: fmt.Sprintf("nonce in response %s does not match nonce in request %s", responseNonce, req.Nonce)}
+		}
+	}
+	// check certReq
+	if req.CertReq {
+		for _, signerInfo := range token.SignerInfos {
+			if _, err := token.GetSigningCertificate(&signerInfo); err != nil {
+				continue
+			}
+			// find at least one signing certificate
+			return nil
+		}
+		// no signing certificate was found
+		return &InvalidResponseError{Msg: "certReq is True in request, but did not find any TSA signing certificate in the response"}
+	} else {
+		if len(token.Certificates) != 0 {
+			return &InvalidResponseError{Msg: "certReq is False in request, but certificates field is included in the response"}
+		}
 	}
 	return nil
 }
