@@ -42,6 +42,9 @@ var (
 	// SHA512WithRSA is defined in RFC 8017 C ASN.1 Module
 	SHA512WithRSA = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 13}
 
+	// RSAPSS is defined in RFC 8017 C ASN.1 Module
+	RSAPSS = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 1, 10}
+
 	// ECDSAWithSHA256 is defined in RFC 5758 3.2 ECDSA Signature Algorithm
 	ECDSAWithSHA256 = asn1.ObjectIdentifier{1, 2, 840, 10045, 4, 3, 2}
 
