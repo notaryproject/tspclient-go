@@ -53,7 +53,7 @@ type Request struct {
 	Extensions     []pkix.Extension      `asn1:"optional,tag:0"`
 }
 
-// RequestOptions provides options for user to create a new timestamp request
+// RequestOptions provides options for caller to create a new timestamp request
 type RequestOptions struct {
 	// Content is the datum to be time stamped. REQUIRED.
 	Content []byte
@@ -83,7 +83,7 @@ type RequestOptions struct {
 	Extensions []pkix.Extension
 }
 
-// NewRequest creates a timestamp request based on user provided options.
+// NewRequest creates a timestamp request based on caller provided options.
 func NewRequest(opts RequestOptions) (*Request, error) {
 	if opts.Content == nil {
 		return nil, &MalformedRequestError{Msg: "content to be time stamped cannot be empty"}
