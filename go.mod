@@ -1,3 +1,3 @@
 module github.com/notaryproject/tspclient-go
 
-go 1.20
+go 1.21
