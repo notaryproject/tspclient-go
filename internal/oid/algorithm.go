@@ -31,6 +31,15 @@ func ToSignatureAlgorithm(digestAlg, sigAlg asn1.ObjectIdentifier) x509.Signatur
 		case SHA512.Equal(digestAlg):
 			return x509.SHA512WithRSA
 		}
+	case RSAPSS.Equal(sigAlg):
+		switch {
+		case SHA256.Equal(digestAlg):
+			return x509.SHA256WithRSAPSS
+		case SHA384.Equal(digestAlg):
+			return x509.SHA384WithRSAPSS
+		case SHA512.Equal(digestAlg):
+			return x509.SHA512WithRSAPSS
+		}
 	case SHA256WithRSA.Equal(sigAlg):
 		return x509.SHA256WithRSA
 	case SHA384WithRSA.Equal(sigAlg):
