@@ -183,11 +183,7 @@ func (resp *Response) Validate(req *Request) error {
 		return &InvalidResponseError{Msg: fmt.Sprintf("policy in response %v does not match policy in request %v", info.Policy, req.ReqPolicy)}
 	}
 	// check MessageImprint
-	paramReq := req.MessageImprint.HashAlgorithm.Parameters
-	paramResp := info.MessageImprint.HashAlgorithm.Parameters
 	if !info.MessageImprint.HashAlgorithm.Algorithm.Equal(req.MessageImprint.HashAlgorithm.Algorithm) ||
-		paramReq.Class != paramResp.Class || paramReq.Tag != paramResp.Tag || paramReq.IsCompound != paramResp.IsCompound ||
-		!bytes.Equal(paramReq.Bytes, paramResp.Bytes) || !bytes.Equal(paramReq.FullBytes, paramResp.FullBytes) ||
 		!bytes.Equal(info.MessageImprint.HashedMessage, req.MessageImprint.HashedMessage) {
 		return &InvalidResponseError{Msg: fmt.Sprintf("message imprint in response %+v does not match with request %+v", info.MessageImprint, req.MessageImprint)}
 	}

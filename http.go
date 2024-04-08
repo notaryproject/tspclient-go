@@ -87,7 +87,7 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 
 	// verify HTTP response
 	if hResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s %q: https response bad status: %s with response body: %v", http.MethodPost, ts.endpoint, hResp.Status, hResp.Body)
+		return nil, fmt.Errorf("%s %q: https response bad status: %s", http.MethodPost, ts.endpoint, hResp.Status)
 	}
 	if contentType := hResp.Header.Get("Content-Type"); contentType != TimestampReply {
 		return nil, fmt.Errorf("%s %q: unexpected response content type: %s", http.MethodPost, ts.endpoint, contentType)
