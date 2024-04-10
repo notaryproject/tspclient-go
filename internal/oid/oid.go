@@ -76,6 +76,11 @@ var (
 // TSTInfo (id-ct-TSTInfo) is defined in RFC 3161 2.4.2 Response Format
 var TSTInfo = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 1, 4}
 
+// SigningCertificateV2 (id-aa-signingCertificate) is defined in RFC 2634 5.4
+//
+// Reference: https://datatracker.ietf.org/doc/html/rfc2634#section-5.4
+var SigningCertificate = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 2, 12}
+
 // SigningCertificateV2 (id-aa-signingCertificateV2) is defined in RFC 5035 3
 //
 // Reference: https://datatracker.ietf.org/doc/html/rfc5035#section-3

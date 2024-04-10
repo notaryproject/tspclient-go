@@ -35,6 +35,24 @@ type Response struct {
 	TimeStampToken asn1.RawValue `asn1:"optional"`
 }
 
+// signingCertificate contains certificate hash and identifier of the
+// TSA signing certificate.
+//
+// Reference: RFC 2634 5.4 signingCertificate
+//
+//	signingCertificate ::=  SEQUENCE {
+//	 certs        SEQUENCE OF ESSCertID,
+//	 policies     SEQUENCE OF PolicyInformation OPTIONAL }
+type signingCertificate struct {
+	// Certificates contains the list of certificates. The first certificate
+	// MUST be the signing certificate used to verify the timestamp token.
+	Certificates []eSSCertID
+
+	// Policies suggests policy values to be used in the certification path
+	// validation.
+	Policies asn1.RawValue `asn1:"optional"`
+}
+
 // signingCertificateV2 contains certificate hash and identifier of the
 // TSA signing certificate.
 //
@@ -51,6 +69,25 @@ type signingCertificateV2 struct {
 	// Policies suggests policy values to be used in the certification path
 	// validation.
 	Policies asn1.RawValue `asn1:"optional"`
+}
+
+// eSSCertID uniquely identifies a certificate.
+//
+// Reference: RFC 2634 5.4.1
+//
+//	eSSCertID ::=  SEQUENCE {
+//	 certHash                 Hash,
+//	 issuerSerial             IssuerSerial OPTIONAL }
+type eSSCertID struct {
+	// CertHash is the certificate hash using algorithm SHA1.
+	// It is computed over the entire DER-encoded certificate
+	// (including the signature)
+	CertHash []byte
+
+	// IssuerSerial holds the issuer and serialNumber of the certificate.
+	// When it is not present, the SignerIdentifier field in the SignerInfo
+	// will be used.
+	IssuerSerial issuerAndSerial `asn1:"optional"`
 }
 
 // eSSCertIDv2 uniquely identifies a certificate.

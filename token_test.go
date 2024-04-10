@@ -102,11 +102,11 @@ func TestInfo(t *testing.T) {
 }
 
 func TestGetSigningCertificate(t *testing.T) {
-	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampTokenWithoutSigningCertificateV2.p7s")
+	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampTokenWithoutSigningCertificateV1orV2.p7s")
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg := "failed to get SigningCertificateV2 from signed attributes: attribute not found"
+	expectedErrMsg := "invalid timestamp token: both signingCertificate and signingCertificateV2 fields are missing"
 	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -115,7 +115,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg = "issuer name is missing in IssuerSerial of SigningCertificateV2 attribute"
+	expectedErrMsg = "issuer name is missing in IssuerSerial"
 	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -153,6 +153,14 @@ func TestGetSigningCertificate(t *testing.T) {
 	expectedErrMsg = "signing certificate hash does not match CertHash in SigningCertificateV2 attribute"
 	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithSigningCertificateV1.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err != nil {
+		t.Fatalf("expected nil error, but got %v", err)
 	}
 }
 
