@@ -155,6 +155,42 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithInvalidSigningCertificateV1.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedErrMsg = "failed to get SigningCertificate from signed attributes: asn1: syntax error: sequence truncated"
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithInvalidSigningCertificateV2.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedErrMsg = "failed to get SigningCertificateV2 from signed attributes: asn1: syntax error: sequence truncated"
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithSigningCertificateV1NoCert.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedErrMsg = "signingCertificate does not contain any certificate"
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithSigningCertificateV2NoCert.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedErrMsg = "signingCertificateV2 does not contain any certificate"
+	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
 	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenWithSigningCertificateV1.p7s")
 	if err != nil {
 		t.Fatal(err)

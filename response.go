@@ -234,18 +234,15 @@ func (resp *Response) Validate(req *Request) error {
 	// check certReq
 	if req.CertReq {
 		for _, signerInfo := range token.SignerInfos {
-			if _, err := token.GetSigningCertificate(&signerInfo); err != nil {
-				continue
+			if _, err := token.GetSigningCertificate(&signerInfo); err == nil {
+				// found at least one signing certificate
+				return nil
 			}
-			// find at least one signing certificate
-			return nil
 		}
 		// no signing certificate was found
 		return &InvalidResponseError{Msg: "certReq is True in request, but did not find any TSA signing certificate in the response"}
-	} else {
-		if len(token.Certificates) != 0 {
-			return &InvalidResponseError{Msg: "certReq is False in request, but certificates field is included in the response"}
-		}
+	} else if len(token.Certificates) != 0 {
+		return &InvalidResponseError{Msg: "certReq is False in request, but certificates field is included in the response"}
 	}
 	return nil
 }

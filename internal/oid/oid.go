@@ -85,3 +85,13 @@ var SigningCertificate = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 2, 1
 //
 // Reference: https://datatracker.ietf.org/doc/html/rfc5035#section-3
 var SigningCertificateV2 = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 2, 47}
+
+// ExtKeyUsage (id-ce-extKeyUsage) is defined in RFC 2459
+//
+// Reference: https://datatracker.ietf.org/doc/html/rfc2459#appendix-B.2
+var ExtKeyUsage = asn1.ObjectIdentifier{2, 5, 29, 37}
+
+// TimeStamping (id-kp-timeStamping) is defined in RFC 3161 2.3
+//
+// Reference: https://datatracker.ietf.org/doc/html/rfc3161#section-2.3
+var TimeStamping = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 8}

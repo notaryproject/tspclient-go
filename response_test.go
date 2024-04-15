@@ -337,4 +337,27 @@ func TestValidateResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
+
+	req = &Request{
+		Version:        1,
+		MessageImprint: messageImprint,
+		ReqPolicy:      asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 4146, 2, 3},
+		CertReq:        false,
+	}
+	token, err = os.ReadFile("testdata/TimeStampTokenWithoutCertificate.p7s")
+	if err != nil {
+		t.Fatal("failed to read timestamp token from file:", err)
+	}
+	resp = &Response{
+		Status: pki.StatusInfo{
+			Status: pki.StatusGranted,
+		},
+		TimeStampToken: asn1.RawValue{
+			FullBytes: token,
+		},
+	}
+	err = resp.Validate(req)
+	if err != nil {
+		t.Fatalf("expected nil error, but got %v", err)
+	}
 }

@@ -60,7 +60,7 @@ type testTSA struct {
 func TestTSATimestampGranted(t *testing.T) {
 	// prepare TSA
 	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
-	tsa, err := newTestTSA(false)
+	tsa, err := newTestTSA(false, true)
 	if err != nil {
 		t.Fatalf("NewTSA() error = %v", err)
 	}
@@ -122,7 +122,7 @@ func TestTSATimestampGranted(t *testing.T) {
 
 func TestTSATimestampRejection(t *testing.T) {
 	// prepare TSA
-	tsa, err := newTestTSA(false)
+	tsa, err := newTestTSA(false, true)
 	if err != nil {
 		t.Fatalf("NewTSA() error = %v", err)
 	}
@@ -152,7 +152,7 @@ func TestTSATimestampRejection(t *testing.T) {
 func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
 	// prepare TSA
 	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
-	tsa, err := newTestTSA(true)
+	tsa, err := newTestTSA(true, false)
 	if err != nil {
 		t.Fatalf("NewTSA() error = %v", err)
 	}
@@ -190,7 +190,54 @@ func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
 	opts := x509.VerifyOptions{
 		Roots: roots,
 	}
-	expectedErrMsg := "failed to verify signed token: signing certificate MUST only have ExtKeyUsageTimeStamping as extended key usage"
+	expectedErrMsg := "failed to verify signed token: signing certificate MUST have and only have ExtKeyUsageTimeStamping as extended key usage"
+	if _, err := token.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+}
+
+func TestTSATimestampNonCriticalExtKeyUsage(t *testing.T) {
+	// prepare TSA
+	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
+	tsa, err := newTestTSA(false, false)
+	if err != nil {
+		t.Fatalf("NewTSA() error = %v", err)
+	}
+	tsa.nowFunc = func() time.Time {
+		return now
+	}
+
+	// do timestamp
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		CertReq:       true,
+	}
+	req, err := NewRequest(requestOpts)
+	if err != nil {
+		t.Fatalf("NewRequest() error = %v", err)
+	}
+	ctx := context.Background()
+	resp, err := tsa.Timestamp(ctx, req)
+	if err != nil {
+		t.Fatalf("TSA.Timestamp() error = %v", err)
+	}
+	wantStatus := pki.StatusGranted
+	if got := resp.Status.Status; got != wantStatus {
+		t.Fatalf("Response.Status = %v, want %v", got, wantStatus)
+	}
+
+	// verify timestamp token
+	token, err := resp.SignedToken()
+	if err != nil {
+		t.Fatalf("Response.SignedToken() error = %v", err)
+	}
+	roots := x509.NewCertPool()
+	roots.AddCert(tsa.certificate())
+	opts := x509.VerifyOptions{
+		Roots: roots,
+	}
+	expectedErrMsg := "failed to verify signed token: signing certificate extended key usage extension MUST be set as critical"
 	if _, err := token.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -199,7 +246,7 @@ func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
 func TestTSATimestampWithoutCertificate(t *testing.T) {
 	// prepare TSA
 	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
-	tsa, err := newTestTSA(false)
+	tsa, err := newTestTSA(false, true)
 	if err != nil {
 		t.Fatalf("NewTSA() error = %v", err)
 	}
@@ -246,7 +293,7 @@ func TestTSATimestampWithoutCertificate(t *testing.T) {
 }
 
 // newTestTSA creates a testTSA with random credentials.
-func newTestTSA(malformedExtKeyUsage bool) (*testTSA, error) {
+func newTestTSA(malformedExtKeyUsage, criticalTimestampingExtKeyUsage bool) (*testTSA, error) {
 	// generate key
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -275,6 +322,19 @@ func newTestTSA(malformedExtKeyUsage bool) (*testTSA, error) {
 		KeyUsage:              x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           extKeyUsages,
 		BasicConstraintsValid: true,
+	}
+	if criticalTimestampingExtKeyUsage {
+		extValue, err := asn1.Marshal([]asn1.ObjectIdentifier{oid.TimeStamping})
+		if err != nil {
+			return nil, err
+		}
+		template.ExtraExtensions = []pkix.Extension{
+			{
+				Id:       oid.ExtKeyUsage,
+				Critical: true,
+				Value:    extValue,
+			},
+		}
 	}
 	certBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
 	if err != nil {

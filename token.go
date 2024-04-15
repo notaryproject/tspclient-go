@@ -78,13 +78,24 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 			continue
 		}
 		// RFC 3161 2.3: The corresponding certificate MUST contain only one
-		// instance of the extended key usage field extension.
+		// instance of the extended key usage field extension. And it MUST be
+		// marked as critical.
 		if len(signingCertificate.ExtKeyUsage) == 1 &&
 			signingCertificate.ExtKeyUsage[0] == x509.ExtKeyUsageTimeStamping &&
 			len(signingCertificate.UnknownExtKeyUsage) == 0 {
-			return certChain, nil
+			// check if marked as critical
+			for _, ext := range signingCertificate.Extensions {
+				if ext.Id.Equal(oid.ExtKeyUsage) {
+					if ext.Critical {
+						// success verification
+						return certChain, nil
+					}
+					break
+				}
+			}
+			lastErr = SignedTokenVerificationError{Msg: "signing certificate extended key usage extension MUST be set as critical"}
 		} else {
-			lastErr = SignedTokenVerificationError{Msg: "signing certificate MUST only have ExtKeyUsageTimeStamping as extended key usage"}
+			lastErr = SignedTokenVerificationError{Msg: "signing certificate MUST have and only have ExtKeyUsageTimeStamping as extended key usage"}
 		}
 	}
 	return nil, lastErr
