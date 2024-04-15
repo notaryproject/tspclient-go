@@ -150,7 +150,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg = "signing certificate hash does not match CertHash in SigningCertificateV2 attribute"
+	expectedErrMsg = "signing certificate hash does not match CertHash in signed attribute"
 	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}

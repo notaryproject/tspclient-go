@@ -165,29 +165,29 @@ func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.C
 		return nil, CertificateNotFoundError(errors.New("signing certificate not found in the timestamp token"))
 	}
 	// validate hash of candidate signing certificate
-	var hash crypto.Hash
+	var hashFunc crypto.Hash
 	var expectedCertHash []byte
 	if useSigningCertificate {
-		hash = crypto.SHA1
+		hashFunc = crypto.SHA1
 		expectedCertHash = signingCertificate.Certificates[0].CertHash
 	} else {
-		hash = crypto.SHA256 // default hash algorithm for is signingCertificateV2 id-sha256
+		hashFunc = crypto.SHA256 // default hash algorithm for signingCertificateV2 is id-sha256
 		var ok bool
 		if signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm != nil {
 			// use hash algorithm from SigningCertificateV2 signed attribute
-			hash, ok = oid.ToHash(signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm)
+			hashFunc, ok = oid.ToHash(signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm)
 			if !ok {
 				return nil, errors.New("unsupported certificate hash algorithm in SigningCertificateV2 attribute")
 			}
 		}
 		expectedCertHash = signingCertificateV2.Certificates[0].CertHash
 	}
-	certHash, err := hashutil.ComputeHash(hash, candidateSigningCert.Raw)
+	certHash, err := hashutil.ComputeHash(hashFunc, candidateSigningCert.Raw)
 	if err != nil {
 		return nil, err
 	}
 	if !bytes.Equal(certHash, expectedCertHash) {
-		return nil, errors.New("signing certificate hash does not match CertHash in SigningCertificateV2 attribute")
+		return nil, errors.New("signing certificate hash does not match CertHash in signed attribute")
 	}
 	return candidateSigningCert, nil
 }
