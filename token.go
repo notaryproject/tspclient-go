@@ -51,6 +51,7 @@ func ParseSignedToken(ctx context.Context, berData []byte) (*SignedToken, error)
 // An empty list of KeyUsages in VerifyOptions implies ExtKeyUsageTimeStamping.
 // The `Intermediates` in the verify options will be ignored and
 // re-contrusted using the certificates in the parsed signed token.
+// It returns success when the first signer info verification succeeds.
 func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x509.Certificate, error) {
 	if len(t.SignerInfos) == 0 {
 		return nil, SignedTokenVerificationError{Msg: "signerInfo not found"}
