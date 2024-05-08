@@ -179,9 +179,11 @@ func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.C
 	var hashFunc crypto.Hash
 	var expectedCertHash []byte
 	if useSigningCertificate {
+		// Reference: https://datatracker.ietf.org/doc/html/rfc2634#section-5.4.1
 		hashFunc = crypto.SHA1
 		expectedCertHash = signingCertificate.Certificates[0].CertHash
 	} else {
+		// Reference: https://datatracker.ietf.org/doc/html/rfc5035#section-4
 		hashFunc = crypto.SHA256 // default hash algorithm for signingCertificateV2 is id-sha256
 		var ok bool
 		if signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm != nil {
