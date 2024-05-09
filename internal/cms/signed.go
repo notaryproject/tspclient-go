@@ -70,7 +70,7 @@ func ParseSignedData(berData []byte) (*ParsedSignedData, error) {
 	}
 
 	if signedData.Version != 3 {
-		return nil, SyntaxError{Message: fmt.Sprintf("invalid signed data version: got %d, want 3", signedData.Version)}
+		return nil, SyntaxError{Message: fmt.Sprintf("unsupported signed data version: got %d, want 3", signedData.Version)}
 	}
 
 	certs, err := x509.ParseCertificates(signedData.Certificates.Bytes)
