@@ -14,9 +14,7 @@
 // Package hashutil provides utilities for hash.
 package hashutil
 
-import (
-	"crypto"
-)
+import "crypto"
 
 // ComputeHash computes the digest of the message with the given hash algorithm.
 // Callers should check the availability of the hash algorithm before invoking.

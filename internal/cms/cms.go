@@ -174,8 +174,8 @@ type Attributes []Attribute
 
 // Get tries to find the attribute by the given identifier, parse and store
 // the result in the value pointed to by out.
-func (a *Attributes) Get(identifier asn1.ObjectIdentifier, out interface{}) error {
-	for _, attribute := range *a {
+func (a Attributes) Get(identifier asn1.ObjectIdentifier, out any) error {
+	for _, attribute := range a {
 		if identifier.Equal(attribute.Type) {
 			_, err := asn1.Unmarshal(attribute.Values.Bytes, out)
 			return err
