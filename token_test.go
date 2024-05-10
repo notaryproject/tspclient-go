@@ -84,7 +84,7 @@ func TestVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg = "failed to verify signed token: cms: verification failure: crypto/rsa: verification error"
+	expectedErrMsg = "failed to verify signed token: cms verification failure: crypto/rsa: verification error"
 	if _, err := timestampToken.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
