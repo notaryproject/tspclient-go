@@ -125,13 +125,13 @@ func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.C
 	var signingCertificate signingCertificate
 	var useSigningCertificate bool
 	var signingCertificateV2 signingCertificateV2
-	if err := signerInfo.SignedAttributes.TryGet(oid.SigningCertificateV2, &signingCertificateV2); err != nil {
+	if err := signerInfo.SignedAttributes.Get(oid.SigningCertificateV2, &signingCertificateV2); err != nil {
 		if !errors.Is(err, cms.ErrAttributeNotFound) {
 			return nil, fmt.Errorf("failed to get SigningCertificateV2 from signed attributes: %w", err)
 		}
 		// signingCertificateV2 is missing, use signingCertificate instead
 		useSigningCertificate = true
-		if err := signerInfo.SignedAttributes.TryGet(oid.SigningCertificate, &signingCertificate); err != nil {
+		if err := signerInfo.SignedAttributes.Get(oid.SigningCertificate, &signingCertificate); err != nil {
 			if !errors.Is(err, cms.ErrAttributeNotFound) {
 				return nil, fmt.Errorf("failed to get SigningCertificate from signed attributes: %w", err)
 			}

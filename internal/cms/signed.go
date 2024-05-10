@@ -49,6 +49,8 @@ type ParsedSignedData struct {
 
 // ParseSignedData parses ASN.1 BER-encoded SignedData structure to golang
 // friendly types.
+//
+// Only supported SignedData version is 3.
 func ParseSignedData(berData []byte) (*ParsedSignedData, error) {
 	data, err := ber.ConvertToDER(berData)
 	if err != nil {
@@ -66,6 +68,11 @@ func ParseSignedData(berData []byte) (*ParsedSignedData, error) {
 	if _, err := asn1.Unmarshal(contentInfo.Content.Bytes, &signedData); err != nil {
 		return nil, SyntaxError{Message: "invalid signed data", Detail: err}
 	}
+
+	if signedData.Version != 3 {
+		return nil, SyntaxError{Message: fmt.Sprintf("unsupported signed data version: got %d, want 3", signedData.Version)}
+	}
+
 	certs, err := x509.ParseCertificates(signedData.Certificates.Bytes)
 	if err != nil {
 		return nil, SyntaxError{Message: "failed to parse X509 certificates from signed data", Detail: err}
@@ -250,7 +257,7 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 	}
 
 	var contentType asn1.ObjectIdentifier
-	if err := signerInfo.SignedAttributes.TryGet(oid.ContentType, &contentType); err != nil {
+	if err := signerInfo.SignedAttributes.Get(oid.ContentType, &contentType); err != nil {
 		return nil, VerificationError{Message: "invalid content type", Detail: err}
 	}
 	if !d.ContentType.Equal(contentType) {
@@ -258,7 +265,7 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 	}
 
 	var expectedDigest []byte
-	if err := signerInfo.SignedAttributes.TryGet(oid.MessageDigest, &expectedDigest); err != nil {
+	if err := signerInfo.SignedAttributes.Get(oid.MessageDigest, &expectedDigest); err != nil {
 		return nil, VerificationError{Message: "invalid message digest", Detail: err}
 	}
 	hash, ok := oid.ToHash(signerInfo.DigestAlgorithm.Algorithm)
@@ -275,7 +282,7 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 
 	// sanity check on signing time
 	var signingTime time.Time
-	if err := signerInfo.SignedAttributes.TryGet(oid.SigningTime, &signingTime); err != nil {
+	if err := signerInfo.SignedAttributes.Get(oid.SigningTime, &signingTime); err != nil {
 		if errors.Is(err, ErrAttributeNotFound) {
 			return chains[0], nil
 		}
@@ -293,17 +300,6 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 	return nil, VerificationError{Message: fmt.Sprintf("signing time, %s, is outside certificate's validity period", signingTime)}
 }
 
-// isSigningTimeValid helpes to check if signingTime is within the validity
-// period of all certificates in the chain
-func isSigningTimeValid(chain []*x509.Certificate, signingTime time.Time) bool {
-	for _, cert := range chain {
-		if signingTime.Before(cert.NotBefore) || signingTime.After(cert.NotAfter) {
-			return false
-		}
-	}
-	return true
-}
-
 // GetCertificate finds the certificate by issuer name and issuer-specific
 // serial number.
 // Reference: RFC 5652 5 Signed-data Content Type
@@ -314,4 +310,15 @@ func (d *ParsedSignedData) GetCertificate(ref IssuerAndSerialNumber) *x509.Certi
 		}
 	}
 	return nil
+}
+
+// isSigningTimeValid helpes to check if signingTime is within the validity
+// period of all certificates in the chain
+func isSigningTimeValid(chain []*x509.Certificate, signingTime time.Time) bool {
+	for _, cert := range chain {
+		if signingTime.Before(cert.NotBefore) || signingTime.After(cert.NotAfter) {
+			return false
+		}
+	}
+	return true
 }
