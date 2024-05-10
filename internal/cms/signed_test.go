@@ -16,7 +16,6 @@ package cms
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -103,7 +102,7 @@ func TestParseSignedData(t *testing.T) {
 		_, err := ParseSignedData([]byte{
 			0x30, 0x10, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x07, 0x02, 0xa0, 0x03, 0x04, 0x01, 0x78,
 		})
-		fmt.Println(err)
+
 		if err == nil {
 			t.Fatal("ParseSignedData() error = nil, wantErr true")
 		}
