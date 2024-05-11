@@ -190,7 +190,7 @@ func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
 	opts := x509.VerifyOptions{
 		Roots: roots,
 	}
-	expectedErrMsg := "failed to verify signed token: signing certificate MUST have and only have ExtKeyUsageTimeStamping as extended key usage"
+	expectedErrMsg := "signing certificate must have and only have ExtKeyUsageTimeStamping as extended key usage"
 	if _, err := token.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -237,7 +237,7 @@ func TestTSATimestampNonCriticalExtKeyUsage(t *testing.T) {
 	opts := x509.VerifyOptions{
 		Roots: roots,
 	}
-	expectedErrMsg := "failed to verify signed token: signing certificate extended key usage extension MUST be set as critical"
+	expectedErrMsg := "failed to verify signed token: signing certificate extended key usage extension is required and must be set as critical"
 	if _, err := token.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}

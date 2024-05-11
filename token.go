@@ -93,9 +93,9 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 					break
 				}
 			}
-			lastErr = SignedTokenVerificationError{Msg: "signing certificate extended key usage extension MUST be set as critical"}
+			lastErr = SignedTokenVerificationError{Msg: "signing certificate extended key usage extension must be set as critical"}
 		} else {
-			lastErr = SignedTokenVerificationError{Msg: "signing certificate MUST have and only have ExtKeyUsageTimeStamping as extended key usage"}
+			lastErr = SignedTokenVerificationError{Msg: "signing certificate must have and only have ExtKeyUsageTimeStamping as extended key usage"}
 		}
 	}
 	return nil, lastErr
