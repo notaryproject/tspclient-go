@@ -14,6 +14,8 @@
 package tspclient
 
 import (
+	"context"
+	"crypto"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/hex"
@@ -21,6 +23,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/notaryproject/tspclient-go/internal/oid"
 	"github.com/notaryproject/tspclient-go/pki"
@@ -60,7 +63,7 @@ func TestValidateStatus(t *testing.T) {
 		},
 	}
 	expectedErrMsg := "invalid timestamping response: invalid response with status code 2: rejected"
-	err := (&badResponse).ValidateStatus()
+	err := (&badResponse).validateStatus()
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -75,7 +78,7 @@ func TestValidateStatus(t *testing.T) {
 		},
 	}
 	expectedErrMsg = "invalid timestamping response: invalid response with status code 2: rejected. Failure info: unrecognized or unsupported Algorithm Identifier"
-	err = (&badResponse).ValidateStatus()
+	err = (&badResponse).validateStatus()
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -85,7 +88,7 @@ func TestValidateStatus(t *testing.T) {
 			Status: pki.StatusGranted,
 		},
 	}
-	err = (&validResponse).ValidateStatus()
+	err = (&validResponse).validateStatus()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +172,7 @@ func TestValidateResponse(t *testing.T) {
 			FullBytes: token,
 		},
 	}
-	expectedErrMsg = "invalid timestamping response: asn1: structure error: tags don't match (23 vs {class:0 tag:16 length:3 isCompound:true}) {optional:false explicit:false application:false private:false defaultValue:<nil> tag:<nil> stringType:0 timeType:24 set:false omitEmpty:false} Time @89"
+	expectedErrMsg = "invalid timestamping response: cannot unmarshal TSTInfo from timestamp token: asn1: structure error: tags don't match (23 vs {class:0 tag:16 length:3 isCompound:true}) {optional:false explicit:false application:false private:false defaultValue:<nil> tag:<nil> stringType:0 timeType:24 set:false omitEmpty:false} Time @89"
 	err = resp.Validate(req)
 	if err == nil || !errors.As(err, &invalidResponse) || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
@@ -359,5 +362,45 @@ func TestValidateResponse(t *testing.T) {
 	err = resp.Validate(req)
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
+	}
+}
+
+func TestTSAWithGenTimeNonUTC(t *testing.T) {
+	// prepare TSA
+	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
+	tsa, err := newTestTSA(false, true)
+	if err != nil {
+		t.Fatalf("NewTSA() error = %v", err)
+	}
+	tsa.nowFunc = func() time.Time {
+		return now.Local()
+	}
+	tsa.malformedTimeZone = true
+
+	// do timestamp
+	requestOpts := RequestOptions{
+		Content:       []byte("notation"),
+		HashAlgorithm: crypto.SHA256,
+		CertReq:       true,
+	}
+	req, err := NewRequest(requestOpts)
+	if err != nil {
+		t.Fatalf("NewRequest() error = %v", err)
+	}
+	ctx := context.Background()
+	resp, err := tsa.Timestamp(ctx, req)
+	if err != nil {
+		t.Fatalf("TSA.Timestamp() error = %v", err)
+	}
+	wantStatus := pki.StatusGranted
+	if got := resp.Status.Status; got != wantStatus {
+		t.Fatalf("Response.Status = %v, want %v", got, wantStatus)
+	}
+
+	expectedErrMsg := "invalid timestamping response: TSTInfo genTime must be in UTC, but got Local"
+	var invalidResponse *InvalidResponseError
+	err = resp.Validate(req)
+	if err == nil || !errors.As(err, &invalidResponse) || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 }

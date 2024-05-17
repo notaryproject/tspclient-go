@@ -55,6 +55,9 @@ type testTSA struct {
 
 	// nowFunc provides the current time. time.Now() is used if nil.
 	nowFunc func() time.Time
+
+	// test time zone other than UTC
+	malformedTimeZone bool
 }
 
 func TestTSATimestampGranted(t *testing.T) {
@@ -433,6 +436,9 @@ func (tsa *testTSA) generateTokenInfo(req *Request, policy asn1.ObjectIdentifier
 		Accuracy: Accuracy{
 			Seconds: 1,
 		},
+	}
+	if tsa.malformedTimeZone {
+		info.GenTime = nowFunc().Truncate(time.Second)
 	}
 	return asn1.Marshal(info)
 }

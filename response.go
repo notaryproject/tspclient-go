@@ -15,12 +15,12 @@ package tspclient
 
 import (
 	"bytes"
-	"context"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/notaryproject/tspclient-go/pki"
 )
@@ -168,27 +168,15 @@ func (r *Response) UnmarshalBinary(data []byte) error {
 	return err
 }
 
-// ValidateStatus validates the response.Status
-//
-// Reference: RFC 3161 2.4.2
-func (r *Response) ValidateStatus() error {
-	if r.Status.Status != pki.StatusGranted && r.Status.Status != pki.StatusGrantedWithMods {
-		failureInfo, err := r.Status.ParseFailInfo()
-		if err != nil {
-			return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s", r.Status.Status, r.Status.Status.String())}
-		}
-		return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s. Failure info: %s", r.Status.Status, r.Status.Status.String(), failureInfo)}
-	}
-	return nil
-}
-
 // SignedToken returns the timestamp token with signatures.
-// Callers should invoke Verify to verify the content before comsumption.
+//
+// Callers should invoke SignedToken.Verify to verify the content before
+// comsumption.
 func (r *Response) SignedToken() (*SignedToken, error) {
-	if err := r.ValidateStatus(); err != nil {
+	if err := r.validateStatus(); err != nil {
 		return nil, err
 	}
-	return ParseSignedToken(context.Background(), r.TimeStampToken.FullBytes)
+	return ParseSignedToken(r.TimeStampToken.FullBytes)
 }
 
 // Validate checks if resp is a successful timestamp response against
@@ -201,7 +189,7 @@ func (resp *Response) Validate(req *Request) error {
 	if resp == nil {
 		return &InvalidResponseError{Msg: "response cannot be nil"}
 	}
-	if err := resp.ValidateStatus(); err != nil {
+	if err := resp.validateStatus(); err != nil {
 		return err
 	}
 	token, err := resp.SignedToken()
@@ -224,6 +212,11 @@ func (resp *Response) Validate(req *Request) error {
 		!bytes.Equal(info.MessageImprint.HashedMessage, req.MessageImprint.HashedMessage) {
 		return &InvalidResponseError{Msg: fmt.Sprintf("message imprint in response %+v does not match with request %+v", info.MessageImprint, req.MessageImprint)}
 	}
+	// check gen time
+	genTime := info.GenTime
+	if genTime.Location() != time.UTC {
+		return &InvalidResponseError{Msg: fmt.Sprintf("TSTInfo genTime must be in UTC, but got %s", genTime.Location())}
+	}
 	// check nonce
 	if req.Nonce != nil {
 		responseNonce := info.Nonce
@@ -243,6 +236,20 @@ func (resp *Response) Validate(req *Request) error {
 		return &InvalidResponseError{Msg: "certReq is True in request, but did not find any TSA signing certificate in the response"}
 	} else if len(token.Certificates) != 0 {
 		return &InvalidResponseError{Msg: "certReq is False in request, but certificates field is included in the response"}
+	}
+	return nil
+}
+
+// validateStatus validates the response.Status
+//
+// Reference: RFC 3161 2.4.2
+func (r *Response) validateStatus() error {
+	if r.Status.Status != pki.StatusGranted && r.Status.Status != pki.StatusGrantedWithMods {
+		failureInfo, err := r.Status.ParseFailInfo()
+		if err != nil {
+			return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s", r.Status.Status, r.Status.Status.String())}
+		}
+		return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s. Failure info: %s", r.Status.Status, r.Status.Status.String(), failureInfo)}
 	}
 	return nil
 }

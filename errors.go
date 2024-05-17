@@ -24,7 +24,7 @@ type MalformedRequestError struct {
 }
 
 // Error returns error message.
-func (e MalformedRequestError) Error() string {
+func (e *MalformedRequestError) Error() string {
 	msg := "malformed timestamping request"
 	if e.Msg != "" {
 		msg += ": " + e.Msg
@@ -36,7 +36,7 @@ func (e MalformedRequestError) Error() string {
 }
 
 // Unwrap returns the internal error.
-func (e MalformedRequestError) Unwrap() error {
+func (e *MalformedRequestError) Unwrap() error {
 	return e.Detail
 }
 
@@ -47,7 +47,7 @@ type InvalidResponseError struct {
 }
 
 // Error returns error message.
-func (e InvalidResponseError) Error() string {
+func (e *InvalidResponseError) Error() string {
 	msg := "invalid timestamping response"
 	if e.Msg != "" {
 		msg += ": " + e.Msg
@@ -59,7 +59,7 @@ func (e InvalidResponseError) Error() string {
 }
 
 // Unwrap returns the internal error.
-func (e InvalidResponseError) Unwrap() error {
+func (e *InvalidResponseError) Unwrap() error {
 	return e.Detail
 }
 
@@ -70,7 +70,7 @@ type SignedTokenVerificationError struct {
 }
 
 // Error returns error message.
-func (e SignedTokenVerificationError) Error() string {
+func (e *SignedTokenVerificationError) Error() string {
 	msg := "failed to verify signed token"
 	if e.Msg != "" {
 		msg += ": " + e.Msg
@@ -82,18 +82,18 @@ func (e SignedTokenVerificationError) Error() string {
 }
 
 // Unwrap returns the internal error.
-func (e SignedTokenVerificationError) Unwrap() error {
+func (e *SignedTokenVerificationError) Unwrap() error {
 	return e.Detail
 }
 
-// TSTInfoError is used when fail to verify signed token.
+// TSTInfoError is used when fail a TSTInfo is invalid.
 type TSTInfoError struct {
 	Msg    string
 	Detail error
 }
 
 // Error returns error message.
-func (e TSTInfoError) Error() string {
+func (e *TSTInfoError) Error() string {
 	msg := "invalid TSTInfo"
 	if e.Msg != "" {
 		msg += ": " + e.Msg
@@ -105,6 +105,6 @@ func (e TSTInfoError) Error() string {
 }
 
 // Unwrap returns the internal error.
-func (e TSTInfoError) Unwrap() error {
+func (e *TSTInfoError) Unwrap() error {
 	return e.Detail
 }

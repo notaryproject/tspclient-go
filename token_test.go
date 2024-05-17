@@ -31,7 +31,7 @@ func TestParseSignedToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg := fmt.Sprintf("unexpected content type: %v", oid.Data)
-	_, err = ParseSignedToken(context.Background(), timestampToken)
+	_, err = ParseSignedToken(timestampToken)
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -95,7 +95,7 @@ func TestInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg := "asn1: structure error: tags don't match (23 vs {class:0 tag:16 length:3 isCompound:true}) {optional:false explicit:false application:false private:false defaultValue:<nil> tag:<nil> stringType:0 timeType:24 set:false omitEmpty:false} Time @89"
+	expectedErrMsg := "cannot unmarshal TSTInfo from timestamp token: asn1: structure error: tags don't match (23 vs {class:0 tag:16 length:3 isCompound:true}) {optional:false explicit:false application:false private:false defaultValue:<nil> tag:<nil> stringType:0 timeType:24 set:false omitEmpty:false} Time @89"
 	if _, err := timestampToken.Info(); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -241,7 +241,7 @@ func TestValidateInfo(t *testing.T) {
 
 	var tstInfo *TSTInfo
 	expectedErrMsg := "invalid TSTInfo: timestamp token info cannot be nil"
-	err := tstInfo.Validate(message)
+	err := tstInfo.validate(message)
 	if err == nil || !errors.As(err, &tstInfoErr) || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -255,7 +255,7 @@ func TestValidateInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "invalid TSTInfo: timestamp token info version must be 1, but got 2"
-	err = tstInfo.Validate(message)
+	err = tstInfo.validate(message)
 	if err == nil || !errors.As(err, &tstInfoErr) || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
@@ -269,7 +269,7 @@ func TestValidateInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "invalid TSTInfo: unrecognized hash algorithm: 1.2.840.113549.1.1.5"
-	if err := tstInfo.Validate(message); err == nil || err.Error() != expectedErrMsg {
+	if err := tstInfo.validate(message); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -282,7 +282,7 @@ func TestValidateInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "invalid TSTInfo: mismatched message"
-	if err := tstInfo.Validate([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
+	if err := tstInfo.validate([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -294,7 +294,7 @@ func TestValidateInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := tstInfo.Validate(message); err != nil {
+	if err := tstInfo.validate(message); err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
 }
@@ -304,5 +304,5 @@ func getTimestampTokenFromPath(path string) (*SignedToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ParseSignedToken(context.Background(), timestampToken)
+	return ParseSignedToken(timestampToken)
 }

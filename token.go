@@ -34,9 +34,12 @@ import (
 type SignedToken cms.ParsedSignedData
 
 // ParseSignedToken parses ASN.1 BER-encoded structure to SignedToken
-// without verification.
-// Callers should invoke Verify to verify the content before comsumption.
-func ParseSignedToken(ctx context.Context, berData []byte) (*SignedToken, error) {
+// without verification. berData is the full bytes of a TimestampToken defined
+// in RFC 3161 2.4.2.
+//
+// Callers should invoke SignedToken.Verify to verify the content before
+// comsumption.
+func ParseSignedToken(berData []byte) (*SignedToken, error) {
 	signed, err := cms.ParseSignedData(berData)
 	if err != nil {
 		return nil, err
@@ -54,7 +57,7 @@ func ParseSignedToken(ctx context.Context, berData []byte) (*SignedToken, error)
 // It returns success when the first signer info verification succeeds.
 func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x509.Certificate, error) {
 	if len(t.SignerInfos) == 0 {
-		return nil, SignedTokenVerificationError{Msg: "signerInfo not found"}
+		return nil, &SignedTokenVerificationError{Msg: "signerInfo not found"}
 	}
 	if len(opts.KeyUsages) == 0 {
 		opts.KeyUsages = []x509.ExtKeyUsage{x509.ExtKeyUsageTimeStamping}
@@ -69,12 +72,12 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 	for _, signerInfo := range t.SignerInfos {
 		signingCertificate, err := t.GetSigningCertificate(&signerInfo)
 		if err != nil {
-			lastErr = SignedTokenVerificationError{Detail: err}
+			lastErr = &SignedTokenVerificationError{Detail: err}
 			continue
 		}
 		certChain, err := signed.VerifySigner(ctx, &signerInfo, signingCertificate, opts)
 		if err != nil {
-			lastErr = SignedTokenVerificationError{Detail: err}
+			lastErr = &SignedTokenVerificationError{Detail: err}
 			continue
 		}
 		// RFC 3161 2.3: The corresponding certificate MUST contain only one
@@ -93,22 +96,12 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 					break
 				}
 			}
-			lastErr = SignedTokenVerificationError{Msg: "signing certificate extended key usage extension must be set as critical"}
+			lastErr = &SignedTokenVerificationError{Msg: "signing certificate extended key usage extension must be set as critical"}
 		} else {
-			lastErr = SignedTokenVerificationError{Msg: "signing certificate must have and only have ExtKeyUsageTimeStamping as extended key usage"}
+			lastErr = &SignedTokenVerificationError{Msg: "signing certificate must have and only have ExtKeyUsageTimeStamping as extended key usage"}
 		}
 	}
 	return nil, lastErr
-}
-
-// Info returns the timestamping information. Caller MUST validate the timestamp
-// token info before consumption.
-func (t *SignedToken) Info() (*TSTInfo, error) {
-	var info TSTInfo
-	if _, err := asn1.Unmarshal(t.Content, &info); err != nil {
-		return nil, err
-	}
-	return &info, nil
 }
 
 // GetSigningCertificate gets the signing certificate identified by SignedToken
@@ -205,6 +198,17 @@ func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.C
 	return candidateSigningCert, nil
 }
 
+// Info returns the TSTInfo as defined in RFC 3161 2.4.2.
+//
+// Caller should use TSTInfo.Timestamp for consumption.
+func (t *SignedToken) Info() (*TSTInfo, error) {
+	var info TSTInfo
+	if _, err := asn1.Unmarshal(t.Content, &info); err != nil {
+		return nil, fmt.Errorf("cannot unmarshal TSTInfo from timestamp token: %w", err)
+	}
+	return &info, nil
+}
+
 //	Accuracy ::= SEQUENCE {
 //	 seconds     INTEGER             OPTIONAL,
 //	 millis  [0] INTEGER (1..999)    OPTIONAL,
@@ -242,7 +246,7 @@ type TSTInfo struct {
 // Timestamp returns the timestamp by TSA and its accuracy.
 // tst MUST be valid and the time stamped datum MUST match message.
 func (tst *TSTInfo) Timestamp(message []byte) (time.Time, time.Duration, error) {
-	if err := tst.Validate(message); err != nil {
+	if err := tst.validate(message); err != nil {
 		return time.Time{}, 0, err
 	}
 	accuracy := time.Duration(tst.Accuracy.Seconds)*time.Second +
@@ -251,9 +255,9 @@ func (tst *TSTInfo) Timestamp(message []byte) (time.Time, time.Duration, error) 
 	return tst.GenTime, accuracy, nil
 }
 
-// Validate checks tst against RFC 3161.
+// validate checks tst against RFC 3161.
 // message is verified against the timestamp token MessageImprint.
-func (tst *TSTInfo) Validate(message []byte) error {
+func (tst *TSTInfo) validate(message []byte) error {
 	if tst == nil {
 		return &TSTInfoError{Msg: "timestamp token info cannot be nil"}
 	}
