@@ -215,7 +215,7 @@ func (resp *Response) Validate(req *Request) error {
 	// check gen time
 	genTime := info.GenTime
 	if genTime.Location() != time.UTC {
-		return &InvalidResponseError{Msg: fmt.Sprintf("TSTInfo genTime must be in UTC, but got %s", genTime.Location())}
+		return &InvalidResponseError{Msg: "TSTInfo genTime must be in UTC"}
 	}
 	// check nonce
 	if req.Nonce != nil {

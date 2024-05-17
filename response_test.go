@@ -398,7 +398,7 @@ func TestTSAWithGenTimeNotUTC(t *testing.T) {
 		t.Fatalf("Response.Status = %v, want %v", got, wantStatus)
 	}
 
-	expectedErrMsg := "invalid timestamping response: TSTInfo genTime must be in UTC, but got Local"
+	expectedErrMsg := "invalid timestamping response: TSTInfo genTime must be in UTC"
 	var invalidResponse *InvalidResponseError
 	err = resp.Validate(req)
 	if err == nil || !errors.As(err, &invalidResponse) || err.Error() != expectedErrMsg {
