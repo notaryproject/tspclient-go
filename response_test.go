@@ -365,15 +365,16 @@ func TestValidateResponse(t *testing.T) {
 	}
 }
 
-func TestTSAWithGenTimeNonUTC(t *testing.T) {
+func TestTSAWithGenTimeNotUTC(t *testing.T) {
 	// prepare TSA
-	now := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
+	loc := time.FixedZone("UTC+8", 8*60*60)
+	now := time.Date(2021, 9, 18, 11, 54, 34, 0, loc)
 	tsa, err := newTestTSA(false, true)
 	if err != nil {
 		t.Fatalf("NewTSA() error = %v", err)
 	}
 	tsa.nowFunc = func() time.Time {
-		return now.Local()
+		return now
 	}
 	tsa.malformedTimeZone = true
 
