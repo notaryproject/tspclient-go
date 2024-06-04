@@ -73,10 +73,14 @@ func TestTSATimestampGranted(t *testing.T) {
 
 	// do timestamp
 	message := []byte("notation")
+	nonce, err := generateNonce()
+	if err != nil {
+		t.Fatal("failed to create nonce:", err)
+	}
 	requestOpts := RequestOptions{
 		Content:       message,
 		HashAlgorithm: crypto.SHA256,
-		CertReq:       true,
+		Nonce:         nonce,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -134,7 +138,6 @@ func TestTSATimestampRejection(t *testing.T) {
 	requestOpts := RequestOptions{
 		Content:       []byte("notation"),
 		HashAlgorithm: crypto.SHA256,
-		CertReq:       true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -167,7 +170,6 @@ func TestTSATimestampMalformedExtKeyUsage(t *testing.T) {
 	requestOpts := RequestOptions{
 		Content:       []byte("notation"),
 		HashAlgorithm: crypto.SHA256,
-		CertReq:       true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -214,7 +216,6 @@ func TestTSATimestampNonCriticalExtKeyUsage(t *testing.T) {
 	requestOpts := RequestOptions{
 		Content:       []byte("notation"),
 		HashAlgorithm: crypto.SHA256,
-		CertReq:       true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -262,7 +263,7 @@ func TestTSATimestampWithoutCertificate(t *testing.T) {
 	requestOpts := RequestOptions{
 		Content:       message,
 		HashAlgorithm: crypto.SHA256,
-		CertReq:       false,
+		NoCert:        true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -436,6 +437,7 @@ func (tsa *testTSA) generateTokenInfo(req *Request, policy asn1.ObjectIdentifier
 		Accuracy: Accuracy{
 			Seconds: 1,
 		},
+		Nonce: req.Nonce,
 	}
 	if tsa.malformedTimeZone {
 		info.GenTime = nowFunc().Truncate(time.Second)

@@ -67,7 +67,7 @@ func TestHTTPTimestampGranted(t *testing.T) {
 			Tag:       5,
 			FullBytes: []byte{5, 0},
 		},
-		CertReq: true,
+		NoNonce: true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -171,7 +171,6 @@ func TestHTTPTimestampRejection(t *testing.T) {
 			Tag:       5,
 			FullBytes: []byte{5, 0},
 		},
-		CertReq: true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -208,7 +207,6 @@ func TestHTTPTimestampBadEndpoint(t *testing.T) {
 			Tag:       5,
 			FullBytes: []byte{5, 0},
 		},
-		CertReq: true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -240,7 +238,6 @@ func TestHTTPTimestampEndpointNotFound(t *testing.T) {
 			Tag:       5,
 			FullBytes: []byte{5, 0},
 		},
-		CertReq: true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
@@ -298,7 +295,6 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 			Tag:       5,
 			FullBytes: []byte{5, 0},
 		},
-		CertReq: true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {

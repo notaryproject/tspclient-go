@@ -15,6 +15,7 @@ package tspclient
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
@@ -69,14 +70,21 @@ type RequestOptions struct {
 	// ReqPolicy specifies the TSA policy ID. OPTIONAL.
 	ReqPolicy asn1.ObjectIdentifier
 
+	// NoNonce disables any Nonce usage. When set to true, the Nonce field is
+	// ignored, and no built-in Nonce will be generated. OPTIONAL.
+	NoNonce bool
+
 	// Nonce is a large random number with a high probability that the client
 	// generates it only once. The same nonce is included and validated in the
-	// response. OPTIONAL.
+	// response. It is only used when NoNonce is not set.
+	//
+	// When this field is nil, a built-in Nonce will be generated and sent to
+	// the TSA. OPTIONAL.
 	Nonce *big.Int
 
-	// CertReq determines if TSA signing certificate is included in the response.
-	// OPTIONAL.
-	CertReq bool
+	// NoCert tells the TSA to not include any signing certificate in its
+	// response. OPTIONAL.
+	NoCert bool
 
 	// Extensions is a generic way to add additional information
 	// to the request in the future. OPTIONAL.
@@ -96,6 +104,18 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 	if err != nil {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
+	var nonce *big.Int
+	if !opts.NoNonce {
+		if opts.Nonce != nil { // user provided Nonce, use it
+			nonce = opts.Nonce
+		} else { // user ignored Nonce, use built-in Nonce
+			var err error
+			nonce, err = generateNonce()
+			if err != nil {
+				return nil, &MalformedRequestError{Msg: err.Error()}
+			}
+		}
+	}
 	return &Request{
 		Version: 1,
 		MessageImprint: MessageImprint{
@@ -106,8 +126,8 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 			HashedMessage: digest,
 		},
 		ReqPolicy:  opts.ReqPolicy,
-		Nonce:      opts.Nonce,
-		CertReq:    opts.CertReq,
+		Nonce:      nonce,
+		CertReq:    !opts.NoCert,
 		Extensions: opts.Extensions,
 	}, nil
 }
@@ -150,4 +170,14 @@ func (req *Request) Validate() error {
 		return &MalformedRequestError{Msg: fmt.Sprintf("hashed message is of incorrect size %d", len(req.MessageImprint.HashedMessage))}
 	}
 	return nil
+}
+
+// generateNonce generates a built-in Nonce for TSA request
+func generateNonce() (*big.Int, error) {
+	// Pick a random number from 0 to 2^159
+	nonce, err := rand.Int(rand.Reader, (&big.Int{}).Exp(big.NewInt(2), big.NewInt(159), nil))
+	if err != nil {
+		return nil, errors.New("error generating nonce")
+	}
+	return nonce, nil
 }

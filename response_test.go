@@ -382,7 +382,6 @@ func TestTSAWithGenTimeNotUTC(t *testing.T) {
 	requestOpts := RequestOptions{
 		Content:       []byte("notation"),
 		HashAlgorithm: crypto.SHA256,
-		CertReq:       true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
