@@ -76,14 +76,15 @@ type RequestOptions struct {
 
 	// Nonce is a large random number with a high probability that the client
 	// generates it only once. The same nonce is included and validated in the
-	// response. It is only used when NoNonce is not set.
+	// response. It is only used when NoNonce is not set to true.
 	//
 	// When this field is nil, a built-in Nonce will be generated and sent to
 	// the TSA. OPTIONAL.
 	Nonce *big.Int
 
 	// NoCert tells the TSA to not include any signing certificate in its
-	// response. OPTIONAL.
+	// response. By default, TSA signing certificate is included in the response.
+	// OPTIONAL.
 	NoCert bool
 
 	// Extensions is a generic way to add additional information
