@@ -75,7 +75,7 @@ func ParseSignedData(berData []byte) (*ParsedSignedData, error) {
 
 	certs, err := x509.ParseCertificates(signedData.Certificates.Bytes)
 	if err != nil {
-		return nil, SyntaxError{Message: "failed to parse X509 certificates from signed data", Detail: err}
+		return nil, SyntaxError{Message: "failed to parse X.509 certificates from signed data. Only X.509 certificates are supported", Detail: err}
 	}
 
 	return &ParsedSignedData{
