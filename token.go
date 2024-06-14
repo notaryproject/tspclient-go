@@ -116,26 +116,26 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 // References: RFC 3161 2.4.1 & 2.4.2; RFC 5816; RFC 5035 4; RFC 2634 5.4
 func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
 	var signingCertificate signingCertificate
-	var useSigningCertificate bool
+	var expectSigningCertificateV1 bool
 	var signingCertificateV2 signingCertificateV2
 	if err := signerInfo.SignedAttributes.Get(oid.SigningCertificateV2, &signingCertificateV2); err != nil {
 		if !errors.Is(err, cms.ErrAttributeNotFound) {
 			return nil, fmt.Errorf("failed to get SigningCertificateV2 from signed attributes: %w", err)
 		}
-		// signingCertificateV2 is missing, use signingCertificate instead
-		useSigningCertificate = true
+		// signingCertificateV2 is missing, try signingCertificate v1 instead
+		expectSigningCertificateV1 = true
 		if err := signerInfo.SignedAttributes.Get(oid.SigningCertificate, &signingCertificate); err != nil {
 			if !errors.Is(err, cms.ErrAttributeNotFound) {
 				return nil, fmt.Errorf("failed to get SigningCertificate from signed attributes: %w", err)
 			}
-			// signingCertificate is missing as well
+			// signingCertificate v1 is missing as well
 			return nil, errors.New("invalid timestamp token: both signingCertificate and signingCertificateV2 fields are missing")
 		}
 	}
 	// get candidate signing certificate
 	var candidateSigningCert *x509.Certificate
 	var issuerSerial issuerAndSerial
-	if useSigningCertificate {
+	if expectSigningCertificateV1 {
 		if len(signingCertificate.Certificates) == 0 {
 			return nil, errors.New("signingCertificate does not contain any certificate")
 		}
@@ -171,7 +171,7 @@ func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.C
 	// validate hash of candidate signing certificate
 	var hashFunc crypto.Hash
 	var expectedCertHash []byte
-	if useSigningCertificate {
+	if expectSigningCertificateV1 {
 		// Reference: https://datatracker.ietf.org/doc/html/rfc2634#section-5.4.1
 		hashFunc = crypto.SHA1
 		expectedCertHash = signingCertificate.Certificates[0].CertHash
