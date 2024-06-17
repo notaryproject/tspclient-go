@@ -39,11 +39,8 @@ type MessageImprint struct {
 
 // Equal compares if m and n are the same MessageImprint
 func (m MessageImprint) Equal(n MessageImprint) bool {
-	if !m.HashAlgorithm.Algorithm.Equal(n.HashAlgorithm.Algorithm) ||
-		!bytes.Equal(m.HashedMessage, n.HashedMessage) {
-		return false
-	}
-	return true
+	return m.HashAlgorithm.Algorithm.Equal(n.HashAlgorithm.Algorithm) &&
+		bytes.Equal(m.HashedMessage, n.HashedMessage)
 }
 
 // Request is a time-stamping request.

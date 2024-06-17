@@ -207,8 +207,8 @@ func (resp *Response) Validate(req *Request) error {
 //
 // Reference: RFC 3161 2.4.2
 func (r *Response) validateStatus() error {
-	if r.Status.Err() != nil {
-		return &InvalidResponseError{Detail: r.Status.Err()}
+	if err := r.Status.Err(); err != nil {
+		return &InvalidResponseError{Detail: err}
 	}
 	return nil
 }
