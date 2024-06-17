@@ -14,7 +14,6 @@
 package tspclient
 
 import (
-	"bytes"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
@@ -24,16 +23,6 @@ import (
 
 	"github.com/notaryproject/tspclient-go/pki"
 )
-
-// Response is a time-stamping response.
-//
-//	TimeStampResp ::= SEQUENCE {
-//	 status          PKIStatusInfo,
-//	 timeStampToken  TimeStampToken  OPTIONAL }
-type Response struct {
-	Status         pki.StatusInfo
-	TimeStampToken asn1.RawValue `asn1:"optional"`
-}
 
 // signingCertificate contains certificate hash and identifier of the
 // TSA signing certificate.
@@ -148,6 +137,16 @@ type generalNames struct {
 	Name asn1.RawValue `asn1:"optional,tag:4"`
 }
 
+// Response is a time-stamping response.
+//
+//	TimeStampResp ::= SEQUENCE {
+//	 status          PKIStatusInfo,
+//	 timeStampToken  TimeStampToken  OPTIONAL }
+type Response struct {
+	Status         pki.StatusInfo
+	TimeStampToken asn1.RawValue `asn1:"optional"`
+}
+
 // MarshalBinary encodes the response to binary form.
 // This method implements encoding.BinaryMarshaler.
 //
@@ -208,8 +207,7 @@ func (resp *Response) Validate(req *Request) error {
 		return &InvalidResponseError{Msg: fmt.Sprintf("policy in response %v does not match policy in request %v", info.Policy, req.ReqPolicy)}
 	}
 	// check MessageImprint
-	if !info.MessageImprint.HashAlgorithm.Algorithm.Equal(req.MessageImprint.HashAlgorithm.Algorithm) ||
-		!bytes.Equal(info.MessageImprint.HashedMessage, req.MessageImprint.HashedMessage) {
+	if !info.MessageImprint.Equal(req.MessageImprint) {
 		return &InvalidResponseError{Msg: fmt.Sprintf("message imprint in response %+v does not match with request %+v", info.MessageImprint, req.MessageImprint)}
 	}
 	// check gen time
@@ -227,14 +225,15 @@ func (resp *Response) Validate(req *Request) error {
 	// check certReq
 	if req.CertReq {
 		for _, signerInfo := range token.SignerInfos {
-			if _, err := token.GetSigningCertificate(&signerInfo); err == nil {
+			if _, err := token.SigningCertificate(&signerInfo); err == nil {
 				// found at least one signing certificate
 				return nil
 			}
 		}
 		// no signing certificate was found
 		return &InvalidResponseError{Msg: "certReq is True in request, but did not find any TSA signing certificate in the response"}
-	} else if len(token.Certificates) != 0 {
+	}
+	if len(token.Certificates) != 0 {
 		return &InvalidResponseError{Msg: "certReq is False in request, but certificates field is included in the response"}
 	}
 	return nil
@@ -244,12 +243,8 @@ func (resp *Response) Validate(req *Request) error {
 //
 // Reference: RFC 3161 2.4.2
 func (r *Response) validateStatus() error {
-	if r.Status.Status != pki.StatusGranted && r.Status.Status != pki.StatusGrantedWithMods {
-		failureInfo, err := r.Status.ParseFailInfo()
-		if err != nil {
-			return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s", r.Status.Status, r.Status.Status.String())}
-		}
-		return &InvalidResponseError{Msg: fmt.Sprintf("invalid response with status code %d: %s. Failure info: %s", r.Status.Status, r.Status.Status.String(), failureInfo)}
+	if r.Status.Err() != nil {
+		return &InvalidResponseError{Detail: r.Status.Err()}
 	}
 	return nil
 }

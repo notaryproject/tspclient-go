@@ -47,7 +47,7 @@ func FromHash(alg crypto.Hash) (asn1.ObjectIdentifier, error) {
 	case crypto.SHA512:
 		id = SHA512
 	default:
-		return nil, fmt.Errorf("unsupported hashing algorithm: %s", alg)
+		return nil, fmt.Errorf("unsupported hashing algorithm: %v", alg)
 	}
 	return id, nil
 }

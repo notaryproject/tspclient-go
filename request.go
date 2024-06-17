@@ -14,6 +14,7 @@
 package tspclient
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/rand"
 	"crypto/x509/pkix"
@@ -34,6 +35,15 @@ import (
 type MessageImprint struct {
 	HashAlgorithm pkix.AlgorithmIdentifier
 	HashedMessage []byte
+}
+
+// Equal compares if m and n are the same MessageImprint
+func (m MessageImprint) Equal(n MessageImprint) bool {
+	if !m.HashAlgorithm.Algorithm.Equal(n.HashAlgorithm.Algorithm) ||
+		!bytes.Equal(m.HashedMessage, n.HashedMessage) {
+		return false
+	}
+	return true
 }
 
 // Request is a time-stamping request.
@@ -65,9 +75,13 @@ type RequestOptions struct {
 
 	// HashAlgorithmParameters is the parameters for the HashAlgorithm.
 	// OPTIONAL.
+	//
+	// Reference: https://www.rfc-editor.org/rfc/rfc5280#section-4.1.1.2
 	HashAlgorithmParameters asn1.RawValue
 
 	// ReqPolicy specifies the TSA policy ID. OPTIONAL.
+	//
+	// Reference: https://datatracker.ietf.org/doc/html/rfc3161#section-2.4.1
 	ReqPolicy asn1.ObjectIdentifier
 
 	// NoNonce disables any Nonce usage. When set to true, the Nonce field is
@@ -176,7 +190,7 @@ func (req *Request) Validate() error {
 // generateNonce generates a built-in Nonce for TSA request
 func generateNonce() (*big.Int, error) {
 	// Pick a random number from 0 to 2^159
-	nonce, err := rand.Int(rand.Reader, (&big.Int{}).Exp(big.NewInt(2), big.NewInt(159), nil))
+	nonce, err := rand.Int(rand.Reader, (&big.Int{}).Lsh(big.NewInt(1), 159))
 	if err != nil {
 		return nil, errors.New("error generating nonce")
 	}

@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 // maxBodyLength specifies the max content can be received from the remote
@@ -28,33 +29,36 @@ import (
 // 10 KiB.
 var maxBodyLength = 1 * 1024 * 1024 // 1 MiB
 
-// TimestampQuery is the content-type of timestamp query.
-// RFC 3161 3.4
-const TimestampQuery = "application/timestamp-query"
+// const for MediaTypes defined in RFC 3161 3.4
+const (
+	// MediaTypeTimestampQuery is the content-type of timestamp query.
+	// RFC 3161 3.4
+	MediaTypeTimestampQuery = "application/timestamp-query"
 
-// TimestampReply is the content-type of timestamp reply
-// RFC 3161 3.4
-const TimestampReply = "application/timestamp-reply"
+	// MediaTypeTimestampReply is the content-type of timestamp reply
+	// RFC 3161 3.4
+	MediaTypeTimestampReply = "application/timestamp-reply"
+)
 
 // httpTimestamper is a HTTP-based timestamper.
 type httpTimestamper struct {
-	rt       http.RoundTripper
-	endpoint string
+	httpClient *http.Client
+	endpoint   string
 }
 
 // NewHTTPTimestamper creates a HTTP-based timestamper with the endpoint
 // provided by the TSA.
 // http.DefaultTransport is used if nil RoundTripper is passed.
-func NewHTTPTimestamper(rt http.RoundTripper, endpoint string) (Timestamper, error) {
-	if rt == nil {
-		rt = http.DefaultTransport
+func NewHTTPTimestamper(httpClient *http.Client, endpoint string) (Timestamper, error) {
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 5 * time.Second}
 	}
 	if _, err := url.Parse(endpoint); err != nil {
 		return nil, err
 	}
 	return &httpTimestamper{
-		rt:       rt,
-		endpoint: endpoint,
+		httpClient: httpClient,
+		endpoint:   endpoint,
 	}, nil
 }
 
@@ -76,10 +80,10 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 	if err != nil {
 		return nil, err
 	}
-	hReq.Header.Set("Content-Type", TimestampQuery)
+	hReq.Header.Set("Content-Type", MediaTypeTimestampQuery)
 
 	// send the request to the remote TSA server
-	hResp, err := ts.rt.RoundTrip(hReq)
+	hResp, err := ts.httpClient.Do(hReq)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +93,7 @@ func (ts *httpTimestamper) Timestamp(ctx context.Context, req *Request) (*Respon
 	if hResp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("%s %q: https response bad status: %s", http.MethodPost, ts.endpoint, hResp.Status)
 	}
-	if contentType := hResp.Header.Get("Content-Type"); contentType != TimestampReply {
+	if contentType := hResp.Header.Get("Content-Type"); contentType != MediaTypeTimestampReply {
 		return nil, fmt.Errorf("%s %q: unexpected response content type: %s", http.MethodPost, ts.endpoint, contentType)
 	}
 

@@ -113,7 +113,7 @@ func TestTSATimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	ts, accuracy, err := info.Timestamp(message)
+	ts, accuracy, err := info.ExtractGenTime(message)
 	if err != nil {
 		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}

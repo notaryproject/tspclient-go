@@ -38,7 +38,7 @@ func TestHTTPTimestampGranted(t *testing.T) {
 		t.Fatal("failed to read test response:", err)
 	}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const wantContentType = TimestampQuery
+		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
@@ -47,7 +47,7 @@ func TestHTTPTimestampGranted(t *testing.T) {
 		}
 
 		// write reply
-		w.Header().Set("Content-Type", TimestampReply)
+		w.Header().Set("Content-Type", MediaTypeTimestampReply)
 		if _, err := w.Write(testResp); err != nil {
 			t.Error("failed to write response:", err)
 		}
@@ -122,7 +122,7 @@ func TestHTTPTimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	timestamp, accuracy, err := info.Timestamp(message)
+	timestamp, accuracy, err := info.ExtractGenTime(message)
 	if err != nil {
 		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}
@@ -143,7 +143,7 @@ func TestHTTPTimestampRejection(t *testing.T) {
 		t.Fatal("failed to read test response:", err)
 	}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const wantContentType = TimestampQuery
+		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
@@ -152,7 +152,7 @@ func TestHTTPTimestampRejection(t *testing.T) {
 		}
 
 		// write reply
-		w.Header().Set("Content-Type", TimestampReply)
+		w.Header().Set("Content-Type", MediaTypeTimestampReply)
 		if _, err := w.Write(testResp); err != nil {
 			t.Error("failed to write response:", err)
 		}
@@ -265,7 +265,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		t.Fatal("failed to read test response:", err)
 	}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const wantContentType = TimestampQuery
+		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
@@ -274,7 +274,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		}
 
 		// write reply
-		w.Header().Set("Content-Type", TimestampReply)
+		w.Header().Set("Content-Type", MediaTypeTimestampReply)
 		if _, err := w.Write(testResp); err != nil {
 			t.Error("failed to write response:", err)
 		}
@@ -306,7 +306,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	}
 
 	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const wantContentType = TimestampQuery
+		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
@@ -315,7 +315,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		}
 
 		// write reply
-		w.Header().Set("Content-Type", TimestampReply)
+		w.Header().Set("Content-Type", MediaTypeTimestampReply)
 		w.WriteHeader(http.StatusInternalServerError)
 		if _, err := w.Write(testResp); err != nil {
 			t.Error("failed to write response:", err)
@@ -332,7 +332,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	}
 
 	ts3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const wantContentType = TimestampQuery
+		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
@@ -361,7 +361,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		t.Fatal("failed to read test response:", err)
 	}
 	ts4 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const wantContentType = TimestampQuery
+		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
 			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
@@ -370,7 +370,7 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 		}
 
 		// write reply
-		w.Header().Set("Content-Type", TimestampReply)
+		w.Header().Set("Content-Type", MediaTypeTimestampReply)
 		if _, err := w.Write(malformedResp); err != nil {
 			t.Error("failed to write response:", err)
 		}

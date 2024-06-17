@@ -17,6 +17,8 @@ package pki
 import (
 	"encoding/asn1"
 	"errors"
+	"fmt"
+	"strconv"
 )
 
 // ErrUnknownStatus is used when PKIStatus is not supported
@@ -38,12 +40,9 @@ const (
 	StatusRevocationNotification Status = 5 // notification that a revocation has occurred
 )
 
-// Statuses is an array of supported PKIStatus
-var Statuses = []Status{StatusGranted, StatusGrantedWithMods, StatusRejection, StatusWaiting, StatusRevocationWarning, StatusRevocationNotification}
-
 // String converts Status to string
-func (ps Status) String() string {
-	switch ps {
+func (s Status) String() string {
+	switch s {
 	case StatusGranted:
 		return "granted"
 	case StatusGrantedWithMods:
@@ -57,7 +56,7 @@ func (ps Status) String() string {
 	case StatusRevocationNotification:
 		return "a revocation has occurred"
 	default:
-		return "unknown PKIStatus"
+		return "unknown PKIStatus " + strconv.Itoa(int(s))
 	}
 }
 
@@ -75,31 +74,39 @@ const (
 	FailureInfoSystemFailure       FailureInfo = 25 // the request cannot be handled due to system failure
 )
 
-// FailureInfos is an array of supported PKIFailureInfo
-var FailureInfos = []FailureInfo{FailureInfoBadAlg, FailureInfoBadRequest, FailureInfoBadDataFormat, FailureInfoTimeNotAvailable,
-	FailureInfoUnacceptedPolicy, FailureInfoUnacceptedExtension, FailureInfoAddInfoNotAvailable, FailureInfoSystemFailure}
+// failureInfos is an array of supported PKIFailureInfo
+var failureInfos = []FailureInfo{
+	FailureInfoBadAlg,
+	FailureInfoBadRequest,
+	FailureInfoBadDataFormat,
+	FailureInfoTimeNotAvailable,
+	FailureInfoUnacceptedPolicy,
+	FailureInfoUnacceptedExtension,
+	FailureInfoAddInfoNotAvailable,
+	FailureInfoSystemFailure,
+}
 
-// String converts FailureInfo to string
-func (pf FailureInfo) String() string {
-	switch pf {
+// Error converts a FailureInfo to an error
+func (fi FailureInfo) Error() error {
+	switch fi {
 	case FailureInfoBadAlg:
-		return "unrecognized or unsupported Algorithm Identifier"
+		return errors.New("unrecognized or unsupported Algorithm Identifier")
 	case FailureInfoBadRequest:
-		return "transaction not permitted or supported"
+		return errors.New("transaction not permitted or supported")
 	case FailureInfoBadDataFormat:
-		return "the data submitted has the wrong format"
+		return errors.New("the data submitted has the wrong format")
 	case FailureInfoTimeNotAvailable:
-		return "the TSA's time source is not available"
+		return errors.New("the TSA's time source is not available")
 	case FailureInfoUnacceptedPolicy:
-		return "the requested TSA policy is not supported by the TSA"
+		return errors.New("the requested TSA policy is not supported by the TSA")
 	case FailureInfoUnacceptedExtension:
-		return "the requested extension is not supported by the TSA"
+		return errors.New("the requested extension is not supported by the TSA")
 	case FailureInfoAddInfoNotAvailable:
-		return "the additional information requested could not be understood or is not available"
+		return errors.New("the additional information requested could not be understood or is not available")
 	case FailureInfoSystemFailure:
-		return "the request cannot be handled due to system failure"
+		return errors.New("the request cannot be handled due to system failure")
 	default:
-		return "unknown PKIFailureInfo"
+		return errors.New("unknown PKIFailureInfo " + strconv.Itoa(int(fi)))
 	}
 }
 
@@ -121,12 +128,17 @@ type StatusInfo struct {
 	FailInfo     asn1.BitString `asn1:"optional"`
 }
 
-// ParseFailInfo parses the FailInfo field of a PKIStatusInfo to PKIFailureInfo
-func (psi StatusInfo) ParseFailInfo() (FailureInfo, error) {
-	for _, pfi := range FailureInfos {
-		if psi.FailInfo.At(int(pfi)) != 0 {
-			return pfi, nil
+// Err return nil when si Status is StatusGranted or StatusGrantedWithMods
+//
+// Otherwise, Err returns an error with FailInfo if any.
+func (si StatusInfo) Err() error {
+	if si.Status != StatusGranted && si.Status != StatusGrantedWithMods {
+		for _, fi := range failureInfos {
+			if si.FailInfo.At(int(fi)) != 0 {
+				return fmt.Errorf("invalid response with status code %d: %s. Failure info: %w", si.Status, si.Status.String(), fi.Error())
+			}
 		}
+		return fmt.Errorf("invalid response with status code %d: %s", si.Status, si.Status.String())
 	}
-	return 0, ErrUnknownFailureInfo
+	return nil
 }

@@ -15,17 +15,26 @@ package pki
 
 import (
 	"encoding/asn1"
-	"errors"
 	"testing"
 )
 
-func TestParseFailInfo(t *testing.T) {
+// statuses is an array of supported PKIStatus
+var statuses = []Status{
+	StatusGranted,
+	StatusGrantedWithMods,
+	StatusRejection,
+	StatusWaiting,
+	StatusRevocationWarning,
+	StatusRevocationNotification,
+}
+
+func TestStatusInfo(t *testing.T) {
 	statusInfo := StatusInfo{
 		Status: StatusGranted,
 	}
-	_, err := statusInfo.ParseFailInfo()
-	if !errors.Is(err, ErrUnknownFailureInfo) {
-		t.Fatalf("error should be ErrUnknownFailureInfo, but got %s", err)
+	err := statusInfo.Err()
+	if err != nil {
+		t.Fatalf("expected nil error, but got %s", err)
 	}
 
 	statusInfo = StatusInfo{
@@ -35,9 +44,10 @@ func TestParseFailInfo(t *testing.T) {
 			BitLength: 1,
 		},
 	}
-	_, err = statusInfo.ParseFailInfo()
-	if !errors.Is(err, ErrUnknownFailureInfo) {
-		t.Fatalf("error should be ErrUnknownFailureInfo, but got %s", err)
+	err = statusInfo.Err()
+	expectedErrMsg := "invalid response with status code 2: rejected"
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected %s, but got %s", expectedErrMsg, err)
 	}
 
 	statusInfo = StatusInfo{
@@ -47,9 +57,10 @@ func TestParseFailInfo(t *testing.T) {
 			BitLength: 1,
 		},
 	}
-	failInfo, err := statusInfo.ParseFailInfo()
-	if err != nil || failInfo != FailureInfoBadAlg {
-		t.Fatalf("expected %v, but got %v", FailureInfoBadAlg, failInfo)
+	err = statusInfo.Err()
+	expectedErrMsg = "invalid response with status code 2: rejected. Failure info: unrecognized or unsupported Algorithm Identifier"
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected %s, but got %s", expectedErrMsg, err)
 	}
 }
 
@@ -62,19 +73,19 @@ func TestStatusString(t *testing.T) {
 		"warning: a revocation is imminent",
 		"a revocation has occurred",
 	}
-	for idx, s := range Statuses {
+	for idx, s := range statuses {
 		if s.String() != testData[idx] {
 			t.Fatalf("expected %s, but got %s", s.String(), testData[idx])
 		}
 	}
 
 	unknown := Status(6)
-	if unknown.String() != "unknown PKIStatus" {
+	if unknown.String() != "unknown PKIStatus 6" {
 		t.Fatalf("expected %s, but got %s", "unknown PKIStatus", unknown.String())
 	}
 }
 
-func TestFailureInfoString(t *testing.T) {
+func TestFailureInfoError(t *testing.T) {
 	testData := []string{
 		"unrecognized or unsupported Algorithm Identifier",
 		"transaction not permitted or supported",
@@ -85,14 +96,14 @@ func TestFailureInfoString(t *testing.T) {
 		"the additional information requested could not be understood or is not available",
 		"the request cannot be handled due to system failure",
 	}
-	for idx, f := range FailureInfos {
-		if f.String() != testData[idx] {
-			t.Fatalf("expected %s, but got %s", f.String(), testData[idx])
+	for idx, f := range failureInfos {
+		if f.Error().Error() != testData[idx] {
+			t.Fatalf("expected %s, but got %s", f.Error().Error(), testData[idx])
 		}
 	}
 
 	unknown := FailureInfo(1)
-	if unknown.String() != "unknown PKIFailureInfo" {
-		t.Fatalf("expected %s, but got %s", "unknown PKIFailureInfo", unknown.String())
+	if unknown.Error().Error() != "unknown PKIFailureInfo 1" {
+		t.Fatalf("expected %s, but got %s", "unknown PKIFailureInfo", unknown.Error().Error())
 	}
 }

@@ -70,7 +70,7 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 	signed := (*cms.ParsedSignedData)(t)
 	var lastErr error
 	for _, signerInfo := range t.SignerInfos {
-		signingCertificate, err := t.GetSigningCertificate(&signerInfo)
+		signingCertificate, err := t.SigningCertificate(&signerInfo)
 		if err != nil {
 			lastErr = &SignedTokenVerificationError{Detail: err}
 			continue
@@ -104,7 +104,7 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 	return nil, lastErr
 }
 
-// GetSigningCertificate gets the signing certificate identified by SignedToken
+// SigningCertificate gets the signing certificate identified by SignedToken
 // SignerInfo's SigningCertificate or SigningCertificateV2 attribute.
 // If the IssuerSerial field of signing certificate is missing,
 // use signerInfo's sid instead.
@@ -114,7 +114,7 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 // algorithm beyond SHA1. If both are missing, an error will be returned.
 //
 // References: RFC 3161 2.4.1 & 2.4.2; RFC 5816; RFC 5035 4; RFC 2634 5.4
-func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
+func (t *SignedToken) SigningCertificate(signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
 	var signingCertificate signingCertificate
 	var expectSigningCertificateV1 bool
 	var signingCertificateV2 signingCertificateV2
@@ -178,9 +178,9 @@ func (t *SignedToken) GetSigningCertificate(signerInfo *cms.SignerInfo) (*x509.C
 	} else {
 		// Reference: https://datatracker.ietf.org/doc/html/rfc5035#section-4
 		hashFunc = crypto.SHA256 // default hash algorithm for signingCertificateV2 is id-sha256
-		var ok bool
 		if signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm != nil {
 			// use hash algorithm from SigningCertificateV2 signed attribute
+			var ok bool
 			hashFunc, ok = oid.ToHash(signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm)
 			if !ok {
 				return nil, errors.New("unsupported certificate hash algorithm in SigningCertificateV2 attribute")
@@ -243,9 +243,9 @@ type TSTInfo struct {
 	Extensions     []pkix.Extension `asn1:"optional,tag:1"`
 }
 
-// Timestamp returns the timestamp by TSA and its accuracy.
+// ExtractGenTime returns the timestamp by TSA and its accuracy.
 // tst MUST be valid and the time stamped datum MUST match message.
-func (tst *TSTInfo) Timestamp(message []byte) (time.Time, time.Duration, error) {
+func (tst *TSTInfo) ExtractGenTime(message []byte) (time.Time, time.Duration, error) {
 	if err := tst.validate(message); err != nil {
 		return time.Time{}, 0, err
 	}

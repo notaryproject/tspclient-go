@@ -107,7 +107,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg := "invalid timestamp token: both signingCertificate and signingCertificateV2 fields are missing"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -116,7 +116,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "issuer name is missing in IssuerSerial"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -124,7 +124,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err != nil {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
 
@@ -133,7 +133,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "signing certificate not found in the timestamp token"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -142,7 +142,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "unsupported certificate hash algorithm in SigningCertificateV2 attribute"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -151,7 +151,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "signing certificate hash does not match CertHash in signed attribute"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -160,7 +160,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "failed to get SigningCertificate from signed attributes: asn1: syntax error: sequence truncated"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -169,7 +169,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "failed to get SigningCertificateV2 from signed attributes: asn1: syntax error: sequence truncated"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -178,7 +178,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "signingCertificate does not contain any certificate"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -187,7 +187,7 @@ func TestGetSigningCertificate(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg = "signingCertificateV2 does not contain any certificate"
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -195,7 +195,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := timestampToken.GetSigningCertificate(&timestampToken.SignerInfos[0]); err != nil {
+	if _, err := timestampToken.SigningCertificate(&timestampToken.SignerInfos[0]); err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
 }
@@ -210,7 +210,7 @@ func TestTimestamp(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg := "invalid TSTInfo: mismatched message"
-	if _, _, err := tstInfo.Timestamp([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
+	if _, _, err := tstInfo.ExtractGenTime([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -222,7 +222,7 @@ func TestTimestamp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	timestamp, accuracy, err := tstInfo.Timestamp([]byte("notation"))
+	timestamp, accuracy, err := tstInfo.ExtractGenTime([]byte("notation"))
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
