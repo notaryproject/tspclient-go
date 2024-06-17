@@ -53,6 +53,20 @@ func TestStatusInfo(t *testing.T) {
 	statusInfo = StatusInfo{
 		Status: StatusRejection,
 		FailInfo: asn1.BitString{
+			// FailureInfoBadRequest and FailureInfoBadDataFormat
+			Bytes:     []byte{0x24},
+			BitLength: 8,
+		},
+	}
+	err = statusInfo.Err()
+	expectedErrMsg = "invalid response with status code 2: rejected. Failure info: transaction not permitted or supported; the data submitted has the wrong format"
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected %s, but got %s", expectedErrMsg, err)
+	}
+
+	statusInfo = StatusInfo{
+		Status: StatusRejection,
+		FailInfo: asn1.BitString{
 			Bytes:     []byte{0x80},
 			BitLength: 1,
 		},

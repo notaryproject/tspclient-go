@@ -122,7 +122,7 @@ func TestHTTPTimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	timestamp, accuracy, err := info.ExtractGenTime(message)
+	timestamp, accuracy, err := info.Validate(message)
 	if err != nil {
 		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}

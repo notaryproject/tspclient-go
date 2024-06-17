@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // ErrUnknownStatus is used when PKIStatus is not supported
@@ -132,11 +133,16 @@ type StatusInfo struct {
 //
 // Otherwise, Err returns an error with FailInfo if any.
 func (si StatusInfo) Err() error {
+	var err error
 	if si.Status != StatusGranted && si.Status != StatusGrantedWithMods {
 		for _, fi := range failureInfos {
 			if si.FailInfo.At(int(fi)) != 0 {
-				return fmt.Errorf("invalid response with status code %d: %s. Failure info: %w", si.Status, si.Status.String(), fi.Error())
+				err = errors.Join(err, fi.Error())
 			}
+		}
+		if err != nil { // there is FailInfo
+			errMsg := strings.ReplaceAll(err.Error(), "\n", "; ")
+			return fmt.Errorf("invalid response with status code %d: %s. Failure info: %s", si.Status, si.Status.String(), errMsg)
 		}
 		return fmt.Errorf("invalid response with status code %d: %s", si.Status, si.Status.String())
 	}

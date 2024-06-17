@@ -105,47 +105,23 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 }
 
 // SigningCertificate gets the signing certificate identified by SignedToken
-// SignerInfo's SigningCertificate or SigningCertificateV2 attribute.
+// SignerInfo's SigningCertificateV2 attribute.
 // If the IssuerSerial field of signing certificate is missing,
 // use signerInfo's sid instead.
-// The identified signing certificate MUST match the hash in SigningCertificate
-// or SigningCertificateV2.
-// When both are present, SigningCertificateV2 is used because it uses hash
-// algorithm beyond SHA1. If both are missing, an error will be returned.
+// The identified signing certificate MUST match the hash in SigningCertificateV2.
 //
-// References: RFC 3161 2.4.1 & 2.4.2; RFC 5816; RFC 5035 4; RFC 2634 5.4
+// References: RFC 3161 2.4.1 & 2.4.2; RFC 5816
 func (t *SignedToken) SigningCertificate(signerInfo *cms.SignerInfo) (*x509.Certificate, error) {
-	var signingCertificate signingCertificate
-	var expectSigningCertificateV1 bool
 	var signingCertificateV2 signingCertificateV2
 	if err := signerInfo.SignedAttributes.Get(oid.SigningCertificateV2, &signingCertificateV2); err != nil {
-		if !errors.Is(err, cms.ErrAttributeNotFound) {
-			return nil, fmt.Errorf("failed to get SigningCertificateV2 from signed attributes: %w", err)
-		}
-		// signingCertificateV2 is missing, try signingCertificate v1 instead
-		expectSigningCertificateV1 = true
-		if err := signerInfo.SignedAttributes.Get(oid.SigningCertificate, &signingCertificate); err != nil {
-			if !errors.Is(err, cms.ErrAttributeNotFound) {
-				return nil, fmt.Errorf("failed to get SigningCertificate from signed attributes: %w", err)
-			}
-			// signingCertificate v1 is missing as well
-			return nil, errors.New("invalid timestamp token: both signingCertificate and signingCertificateV2 fields are missing")
-		}
+		return nil, fmt.Errorf("failed to get SigningCertificateV2 from signed attributes: %w", err)
 	}
 	// get candidate signing certificate
-	var candidateSigningCert *x509.Certificate
-	var issuerSerial issuerAndSerial
-	if expectSigningCertificateV1 {
-		if len(signingCertificate.Certificates) == 0 {
-			return nil, errors.New("signingCertificate does not contain any certificate")
-		}
-		issuerSerial = signingCertificate.Certificates[0].IssuerSerial
-	} else {
-		if len(signingCertificateV2.Certificates) == 0 {
-			return nil, errors.New("signingCertificateV2 does not contain any certificate")
-		}
-		issuerSerial = signingCertificateV2.Certificates[0].IssuerSerial
+	if len(signingCertificateV2.Certificates) == 0 {
+		return nil, errors.New("signingCertificateV2 does not contain any certificate")
 	}
+	issuerSerial := signingCertificateV2.Certificates[0].IssuerSerial
+	var candidateSigningCert *x509.Certificate
 	signed := (*cms.ParsedSignedData)(t)
 	if issuerSerial.SerialNumber != nil {
 		// use IssuerSerial from signed attribute
@@ -169,25 +145,17 @@ func (t *SignedToken) SigningCertificate(signerInfo *cms.SignerInfo) (*x509.Cert
 		return nil, CertificateNotFoundError(errors.New("signing certificate not found in the timestamp token"))
 	}
 	// validate hash of candidate signing certificate
-	var hashFunc crypto.Hash
-	var expectedCertHash []byte
-	if expectSigningCertificateV1 {
-		// Reference: https://datatracker.ietf.org/doc/html/rfc2634#section-5.4.1
-		hashFunc = crypto.SHA1
-		expectedCertHash = signingCertificate.Certificates[0].CertHash
-	} else {
-		// Reference: https://datatracker.ietf.org/doc/html/rfc5035#section-4
-		hashFunc = crypto.SHA256 // default hash algorithm for signingCertificateV2 is id-sha256
-		if signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm != nil {
-			// use hash algorithm from SigningCertificateV2 signed attribute
-			var ok bool
-			hashFunc, ok = oid.ToHash(signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm)
-			if !ok {
-				return nil, errors.New("unsupported certificate hash algorithm in SigningCertificateV2 attribute")
-			}
+	// Reference: https://datatracker.ietf.org/doc/html/rfc5035#section-4
+	hashFunc := crypto.SHA256 // default hash algorithm for signingCertificateV2 is id-sha256
+	if signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm != nil {
+		// use hash algorithm from SigningCertificateV2 signed attribute
+		var ok bool
+		hashFunc, ok = oid.ToHash(signingCertificateV2.Certificates[0].HashAlgorithm.Algorithm)
+		if !ok {
+			return nil, errors.New("unsupported certificate hash algorithm in SigningCertificateV2 attribute")
 		}
-		expectedCertHash = signingCertificateV2.Certificates[0].CertHash
 	}
+	expectedCertHash := signingCertificateV2.Certificates[0].CertHash
 	certHash, err := hashutil.ComputeHash(hashFunc, candidateSigningCert.Raw)
 	if err != nil {
 		return nil, err
@@ -243,9 +211,9 @@ type TSTInfo struct {
 	Extensions     []pkix.Extension `asn1:"optional,tag:1"`
 }
 
-// ExtractGenTime returns the timestamp by TSA and its accuracy.
+// Validate validates tst and returns the GenTime and Accuracy.
 // tst MUST be valid and the time stamped datum MUST match message.
-func (tst *TSTInfo) ExtractGenTime(message []byte) (time.Time, time.Duration, error) {
+func (tst *TSTInfo) Validate(message []byte) (time.Time, time.Duration, error) {
 	if err := tst.validate(message); err != nil {
 		return time.Time{}, 0, err
 	}
