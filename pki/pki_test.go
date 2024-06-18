@@ -120,4 +120,12 @@ func TestFailureInfoError(t *testing.T) {
 	if unknown.Error().Error() != "unknown PKIFailureInfo 1" {
 		t.Fatalf("expected %s, but got %s", "unknown PKIFailureInfo", unknown.Error().Error())
 	}
+
+	failureInfoErr := FailureInfoError{
+		Errs: []error{FailureInfoBadRequest.Error(), FailureInfoBadDataFormat.Error()},
+	}
+	expectedErrMsg := "transaction not permitted or supported; the data submitted has the wrong format"
+	if failureInfoErr.Error() != expectedErrMsg {
+		t.Fatalf("expected %s, but got %s", expectedErrMsg, failureInfoErr.Error())
+	}
 }

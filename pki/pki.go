@@ -111,6 +111,20 @@ func (fi FailureInfo) Error() error {
 	}
 }
 
+// FailureInfoError is a joined error of FailureInfo
+type FailureInfoError struct {
+	Errs []error
+}
+
+// Error prints out a concatenated error of e.Errs split by '; '
+func (e *FailureInfoError) Error() string {
+	var errs []string
+	for _, err := range e.Errs {
+		errs = append(errs, err.Error())
+	}
+	return strings.Join(errs, "; ")
+}
+
 // StatusInfo contains status codes and failure information for PKI messages.
 //
 //	PKIStatusInfo ::= SEQUENCE {
@@ -133,16 +147,15 @@ type StatusInfo struct {
 //
 // Otherwise, Err returns an error with FailInfo if any.
 func (si StatusInfo) Err() error {
-	var err error
 	if si.Status != StatusGranted && si.Status != StatusGrantedWithMods {
+		var errs []error
 		for _, fi := range failureInfos {
 			if si.FailInfo.At(int(fi)) != 0 {
-				err = errors.Join(err, fi.Error())
+				errs = append(errs, fi.Error())
 			}
 		}
-		if err != nil { // there is FailInfo
-			errMsg := strings.ReplaceAll(err.Error(), "\n", "; ")
-			return fmt.Errorf("invalid response with status code %d: %s. Failure info: %s", si.Status, si.Status.String(), errMsg)
+		if len(errs) != 0 { // there is FailInfo
+			return fmt.Errorf("invalid response with status code %d: %s. Failure info: %w", si.Status, si.Status.String(), &FailureInfoError{Errs: errs})
 		}
 		return fmt.Errorf("invalid response with status code %d: %s", si.Status, si.Status.String())
 	}
