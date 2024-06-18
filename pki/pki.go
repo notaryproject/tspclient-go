@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 // ErrUnknownStatus is used when PKIStatus is not supported
@@ -111,20 +110,6 @@ func (fi FailureInfo) Error() error {
 	}
 }
 
-// FailureInfoError is a joined error of FailureInfo
-type FailureInfoError struct {
-	Errs []error
-}
-
-// Error prints out a concatenated error of e.Errs split by '; '
-func (e *FailureInfoError) Error() string {
-	var errs []string
-	for _, err := range e.Errs {
-		errs = append(errs, err.Error())
-	}
-	return strings.Join(errs, "; ")
-}
-
 // StatusInfo contains status codes and failure information for PKI messages.
 //
 //	PKIStatusInfo ::= SEQUENCE {
@@ -154,8 +139,9 @@ func (si StatusInfo) Err() error {
 				errs = append(errs, fi.Error())
 			}
 		}
-		if len(errs) != 0 { // there is FailInfo
-			return fmt.Errorf("invalid response with status code %d: %s. Failure info: %w", si.Status, si.Status.String(), &FailureInfoError{Errs: errs})
+		if len(errs) != 0 {
+			// there is FailInfo, wrap them into a FailureInfoError
+			return fmt.Errorf("invalid response with status code %d: %s. Failure info: %w", si.Status, si.Status.String(), &FailureInfoError{Detail: errors.Join(errs...)})
 		}
 		return fmt.Errorf("invalid response with status code %d: %s", si.Status, si.Status.String())
 	}

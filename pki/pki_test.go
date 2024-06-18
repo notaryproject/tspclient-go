@@ -40,12 +40,27 @@ func TestStatusInfo(t *testing.T) {
 	statusInfo = StatusInfo{
 		Status: StatusRejection,
 		FailInfo: asn1.BitString{
+			// unknown FailureInfo
 			Bytes:     []byte{0x01},
 			BitLength: 1,
 		},
 	}
 	err = statusInfo.Err()
 	expectedErrMsg := "invalid response with status code 2: rejected"
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected %s, but got %s", expectedErrMsg, err)
+	}
+
+	statusInfo = StatusInfo{
+		Status: StatusRejection,
+		FailInfo: asn1.BitString{
+			// FailureInfoBadAlg
+			Bytes:     []byte{0x80},
+			BitLength: 1,
+		},
+	}
+	err = statusInfo.Err()
+	expectedErrMsg = "invalid response with status code 2: rejected. Failure info: unrecognized or unsupported Algorithm Identifier"
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected %s, but got %s", expectedErrMsg, err)
 	}
@@ -60,19 +75,6 @@ func TestStatusInfo(t *testing.T) {
 	}
 	err = statusInfo.Err()
 	expectedErrMsg = "invalid response with status code 2: rejected. Failure info: transaction not permitted or supported; the data submitted has the wrong format"
-	if err == nil || err.Error() != expectedErrMsg {
-		t.Fatalf("expected %s, but got %s", expectedErrMsg, err)
-	}
-
-	statusInfo = StatusInfo{
-		Status: StatusRejection,
-		FailInfo: asn1.BitString{
-			Bytes:     []byte{0x80},
-			BitLength: 1,
-		},
-	}
-	err = statusInfo.Err()
-	expectedErrMsg = "invalid response with status code 2: rejected. Failure info: unrecognized or unsupported Algorithm Identifier"
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected %s, but got %s", expectedErrMsg, err)
 	}
@@ -96,36 +98,5 @@ func TestStatusString(t *testing.T) {
 	unknown := Status(6)
 	if unknown.String() != "unknown PKIStatus 6" {
 		t.Fatalf("expected %s, but got %s", "unknown PKIStatus", unknown.String())
-	}
-}
-
-func TestFailureInfoError(t *testing.T) {
-	testData := []string{
-		"unrecognized or unsupported Algorithm Identifier",
-		"transaction not permitted or supported",
-		"the data submitted has the wrong format",
-		"the TSA's time source is not available",
-		"the requested TSA policy is not supported by the TSA",
-		"the requested extension is not supported by the TSA",
-		"the additional information requested could not be understood or is not available",
-		"the request cannot be handled due to system failure",
-	}
-	for idx, f := range failureInfos {
-		if f.Error().Error() != testData[idx] {
-			t.Fatalf("expected %s, but got %s", f.Error().Error(), testData[idx])
-		}
-	}
-
-	unknown := FailureInfo(1)
-	if unknown.Error().Error() != "unknown PKIFailureInfo 1" {
-		t.Fatalf("expected %s, but got %s", "unknown PKIFailureInfo", unknown.Error().Error())
-	}
-
-	failureInfoErr := FailureInfoError{
-		Errs: []error{FailureInfoBadRequest.Error(), FailureInfoBadDataFormat.Error()},
-	}
-	expectedErrMsg := "transaction not permitted or supported; the data submitted has the wrong format"
-	if failureInfoErr.Error() != expectedErrMsg {
-		t.Fatalf("expected %s, but got %s", expectedErrMsg, failureInfoErr.Error())
 	}
 }
