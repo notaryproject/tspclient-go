@@ -28,6 +28,7 @@ import (
 	"github.com/notaryproject/tspclient-go/internal/cms"
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/internal/oid"
+	nX509 "github.com/notaryproject/tspclient-go/internal/x509"
 )
 
 // SignedToken is a parsed timestamp token with signatures.
@@ -67,6 +68,13 @@ func (t *SignedToken) Verify(ctx context.Context, opts x509.VerifyOptions) ([]*x
 		intermediates.AddCert(cert)
 	}
 	opts.Intermediates = intermediates
+	if opts.Roots == nil { // if no user provided root cert pool
+		var err error
+		opts.Roots, err = nX509.SetupRootCertPool(t.Certificates)
+		if err != nil {
+			return nil, &SignedTokenVerificationError{Msg: "failed to set up root certificate pool", Detail: err}
+		}
+	}
 	signed := (*cms.ParsedSignedData)(t)
 	var lastErr error
 	for _, signerInfo := range t.SignerInfos {
