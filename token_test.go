@@ -19,10 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/notaryproject/tspclient-go/internal/oid"
+	nx509 "github.com/notaryproject/tspclient-go/internal/x509"
 )
 
 func TestParseSignedToken(t *testing.T) {
@@ -87,6 +89,24 @@ func TestVerify(t *testing.T) {
 	expectedErrMsg = "failed to verify signed token: cms verification failure: crypto/rsa: verification error"
 	if _, err := timestampToken.Verify(context.Background(), opts); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenNoRoot.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := timestampToken.Verify(context.Background(), x509.VerifyOptions{}); err != nil {
+		t.Fatal(err)
+	}
+
+	nx509.MaxRootCertBytes = 0
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampTokenNoRoot.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedErrMsg = "https response reached the 0 KiB size limit"
+	if _, err := timestampToken.Verify(context.Background(), x509.VerifyOptions{}); err == nil || !strings.Contains(err.Error(), expectedErrMsg) {
+		t.Fatalf("expected error message should contain %s, but got %s", expectedErrMsg, err)
 	}
 }
 
