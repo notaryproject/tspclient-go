@@ -35,13 +35,13 @@ var MaxRootCertBytes int64 = 1 * 1024 * 1024 // 1 MiB
 
 func SetupRootCertPool(certs []*x509.Certificate) (*x509.CertPool, error) {
 	roots := x509.NewCertPool()
-	issuer := set.New[string]()
+	subjectSet := set.New[string]()
 	var hasRoot bool
 	// check if root cert already in the tsa response
 	for idx, cert := range certs {
 		fmt.Printf("cert %d subject: %s\n", idx, cert.Subject)
 		fmt.Printf("cert %d issuer:  %s\n", idx, cert.Issuer)
-		issuer.Add(cert.Issuer.String())
+		subjectSet.Add(cert.Subject.String())
 		if possibleRoot(cert) {
 			fmt.Printf("cert %d is possible root cert\n", idx)
 			hasRoot = true
@@ -51,7 +51,8 @@ func SetupRootCertPool(certs []*x509.Certificate) (*x509.CertPool, error) {
 	if !hasRoot { // check if can download valid root cert
 		client := &http.Client{Timeout: 2 * time.Second}
 		for _, cert := range certs {
-			if !issuer.Contains(cert.Issuer.String()) && len(cert.IssuingCertificateURL) > 0 {
+			if !subjectSet.Contains(cert.Issuer.String()) && len(cert.IssuingCertificateURL) > 0 {
+				fmt.Println("Downloading root cert...")
 				req, err := http.NewRequest(http.MethodGet, cert.IssuingCertificateURL[0], nil)
 				if err != nil {
 					return nil, err
