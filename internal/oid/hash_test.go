@@ -16,8 +16,13 @@ package oid
 import (
 	"crypto"
 	"encoding/asn1"
+	"fmt"
 	"testing"
 )
+
+// sha1 (id-sha1) is defined in RFC 8017 B.1 Hash Functions.
+// for test purpose only
+var sha1 = asn1.ObjectIdentifier{1, 3, 14, 3, 2, 26}
 
 func TestToHash(t *testing.T) {
 	tests := []struct {
@@ -40,6 +45,35 @@ func TestToHash(t *testing.T) {
 			}
 			if gotExists != tt.wantExists {
 				t.Errorf("ToHash() gotExists = %v, want %v", gotExists, tt.wantExists)
+			}
+		})
+	}
+}
+
+func TestFromHash(t *testing.T) {
+	tests := []struct {
+		name      string
+		alg       crypto.Hash
+		wantAlg   asn1.ObjectIdentifier
+		wantError error
+	}{
+		{"SHA256", crypto.SHA256, SHA256, nil},
+		{"SHA384", crypto.SHA384, SHA384, nil},
+		{"SHA512", crypto.SHA512, SHA512, nil},
+		{"Unsupported", crypto.SHA1, sha1, fmt.Errorf("unsupported hashing algorithm: %s", crypto.SHA1)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotAlg, err := FromHash(tt.alg)
+			if err == nil && tt.wantError != nil {
+				t.Fatalf("FromHash() expected %v, but got nil", tt.wantError)
+			}
+			if err != nil && (tt.wantError == nil || err.Error() != tt.wantError.Error()) {
+				t.Fatalf("FromHash() expected %v, but got %v", tt.wantError, err)
+			}
+			if err == nil && !gotAlg.Equal(tt.wantAlg) {
+				t.Errorf("FromHash() gotAlg = %v, want %v", gotAlg, tt.wantAlg)
 			}
 		})
 	}

@@ -72,3 +72,29 @@ var (
 	// SigningTime (id-signingTime) is defined in RFC 5652 11.3 Signing Time
 	SigningTime = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 5}
 )
+
+// OIDs for RFC 3161 Timestamping
+var (
+	// TSTInfo (id-ct-TSTInfo) is defined in RFC 3161 2.4.2 Response Format
+	TSTInfo = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 1, 4}
+
+	// SigningCertificateV2 (id-aa-signingCertificate) is defined in RFC 2634 5.4
+	//
+	// Reference: https://datatracker.ietf.org/doc/html/rfc2634#section-5.4
+	SigningCertificate = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 2, 12}
+
+	// SigningCertificateV2 (id-aa-signingCertificateV2) is defined in RFC 5035 3
+	//
+	// Reference: https://datatracker.ietf.org/doc/html/rfc5035#section-3
+	SigningCertificateV2 = asn1.ObjectIdentifier{1, 2, 840, 113549, 1, 9, 16, 2, 47}
+
+	// ExtKeyUsage (id-ce-extKeyUsage) is defined in RFC 5280
+	//
+	// Reference: https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.12
+	ExtKeyUsage = asn1.ObjectIdentifier{2, 5, 29, 37}
+
+	// TimeStamping (id-kp-timeStamping) is defined in RFC 3161 2.3
+	//
+	// Reference: https://datatracker.ietf.org/doc/html/rfc3161#section-2.3
+	TimeStamping = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 8}
+)
