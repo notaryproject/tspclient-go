@@ -98,3 +98,12 @@ var (
 	// Reference: https://datatracker.ietf.org/doc/html/rfc3161#section-2.3
 	TimeStamping = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 8}
 )
+
+// OIDs for RFC 3628 Policy Requirements for Time-Stamping Authorities (TSAs)
+var (
+	// BaselineTimeStampPolicy (baseline time-stamp policy) is defined in
+	// RFC 3628
+	//
+	// Referene: https://datatracker.ietf.org/doc/html/rfc3628#section-5.2
+	BaselineTimeStampPolicy = asn1.ObjectIdentifier{0, 4, 0, 2023, 1, 1}
+)

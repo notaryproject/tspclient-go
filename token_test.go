@@ -202,7 +202,7 @@ func TestTimestamp(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg := "invalid TSTInfo: mismatched message"
-	if _, _, err := tstInfo.Validate([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
+	if _, err := tstInfo.Validate([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -214,16 +214,17 @@ func TestTimestamp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	timestamp, accuracy, err := tstInfo.Validate([]byte("notation"))
+	timestampLimit, err := tstInfo.Validate([]byte("notation"))
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	expectedTimestamp := time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC)
-	if timestamp != expectedTimestamp {
-		t.Fatalf("expected timestamp %s, but got %s", expectedTimestamp, timestamp)
+	expectedLowerLimit := time.Date(2021, time.September, 17, 14, 9, 9, 0, time.UTC)
+	expectedUpperLimit := time.Date(2021, time.September, 17, 14, 9, 11, 0, time.UTC)
+	if timestampLimit.LowerLimit != expectedLowerLimit {
+		t.Fatalf("expected timestamp %s, but got %s", expectedLowerLimit, timestampLimit.LowerLimit)
 	}
-	if accuracy.Seconds() != 1 {
-		t.Fatalf("expected 1s accuracy, but got %s", accuracy)
+	if timestampLimit.UpperLimit != expectedUpperLimit {
+		t.Fatalf("expected timestamp %s, but got %s", expectedUpperLimit, timestampLimit.UpperLimit)
 	}
 }
 

@@ -122,17 +122,17 @@ func TestHTTPTimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	timestamp, accuracy, err := info.Validate(message)
+	timestampLimit, err := info.Validate(message)
 	if err != nil {
 		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}
-	wantTimestamp := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
-	if timestamp != wantTimestamp {
-		t.Errorf("TSTInfo.Timestamp() Timestamp = %v, want %v", timestamp, wantTimestamp)
+	wantTimestampLowerLimit := time.Date(2021, 9, 18, 11, 54, 33, 0, time.UTC)
+	wantTimestampUpperLimit := time.Date(2021, 9, 18, 11, 54, 35, 0, time.UTC)
+	if timestampLimit.LowerLimit != wantTimestampLowerLimit {
+		t.Errorf("TSTInfo.Timestamp() Timestamp = %v, want %v", timestampLimit.LowerLimit, wantTimestampLowerLimit)
 	}
-	wantAccuracy := time.Second
-	if accuracy != wantAccuracy {
-		t.Errorf("TSTInfo.Timestamp() Accuracy = %v, want %v", accuracy, wantAccuracy)
+	if timestampLimit.UpperLimit != wantTimestampUpperLimit {
+		t.Errorf("TSTInfo.Timestamp() Timestamp = %v, want %v", timestampLimit.UpperLimit, wantTimestampUpperLimit)
 	}
 }
 

@@ -214,16 +214,46 @@ type TSTInfo struct {
 	Extensions     []pkix.Extension `asn1:"optional,tag:1"`
 }
 
+// TimestampLimit contains the lower and upper limits of the time at which the
+// timestamp token has been created by the TSA
+//
+// Reference: RFC 3161 2.4.2
+type TimestampLimit struct {
+	// LowerLimit denotes the lower limit of the time at which the
+	// timestamp token has been created by the TSA
+	LowerLimit time.Time
+
+	// UpperLimit denotes the upper limit of the time at which the
+	// timestamp token has been created by the TSA
+	UpperLimit time.Time
+}
+
 // Validate validates tst and returns the GenTime and Accuracy.
 // tst MUST be valid and the time stamped datum MUST match message.
-func (tst *TSTInfo) Validate(message []byte) (time.Time, time.Duration, error) {
+func (tst *TSTInfo) Validate(message []byte) (*TimestampLimit, error) {
 	if err := tst.validate(message); err != nil {
-		return time.Time{}, 0, err
+		return nil, err
 	}
-	accuracy := time.Duration(tst.Accuracy.Seconds)*time.Second +
-		time.Duration(tst.Accuracy.Milliseconds)*time.Millisecond +
-		time.Duration(tst.Accuracy.Microseconds)*time.Microsecond
-	return tst.GenTime, accuracy, nil
+
+	var accuracy time.Duration
+	// References:
+	// https://datatracker.ietf.org/doc/html/rfc3628#section-5.1
+	// https://github.com/notaryproject/specifications/blob/main/specs/trust-store-trust-policy.md#steps
+	if tst.Accuracy.Seconds == 0 &&
+		tst.Accuracy.Microseconds == 0 &&
+		tst.Accuracy.Milliseconds == 0 &&
+		oid.BaselineTimeStampPolicy.Equal(tst.Policy) {
+		accuracy = 1 * time.Second
+	} else {
+		accuracy = time.Duration(tst.Accuracy.Seconds)*time.Second +
+			time.Duration(tst.Accuracy.Milliseconds)*time.Millisecond +
+			time.Duration(tst.Accuracy.Microseconds)*time.Microsecond
+	}
+
+	return &TimestampLimit{
+		LowerLimit: tst.GenTime.Add(-accuracy),
+		UpperLimit: tst.GenTime.Add(accuracy),
+	}, nil
 }
 
 // validate checks tst against RFC 3161.
