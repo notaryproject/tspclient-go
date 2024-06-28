@@ -214,23 +214,38 @@ type TSTInfo struct {
 	Extensions     []pkix.Extension `asn1:"optional,tag:1"`
 }
 
-// TimestampLimit contains the lower and upper limits of the time at which the
-// timestamp token has been created by the TSA
+// Timestamp denots the time at which the timestamp token was created by the TSA
 //
 // Reference: RFC 3161 2.4.2
-type TimestampLimit struct {
-	// LowerLimit denotes the lower limit of the time at which the
-	// timestamp token has been created by the TSA
-	LowerLimit time.Time
+type Timestamp struct {
+	// Value is the GenTime of TSTInfo
+	Value time.Time
 
-	// UpperLimit denotes the upper limit of the time at which the
-	// timestamp token has been created by the TSA
-	UpperLimit time.Time
+	// Accuracy is the Accuracy of TSTInfo
+	Accuracy time.Duration
+}
+
+// Before returns true if the lower limit of the time at which the timestamp
+// token was created is before u.
+//
+// Reference: RFC 3161 2.4.2
+func (t *Timestamp) Before(u time.Time) bool {
+	timestampLowerLimit := t.Value.Add(-t.Accuracy)
+	return timestampLowerLimit.Before(u)
+}
+
+// After returns true if the upper limit of the time at which the timestamp
+// token was created is after u.
+//
+// Reference: RFC 3161 2.4.2
+func (t *Timestamp) After(u time.Time) bool {
+	timestampUpperLimit := t.Value.Add(t.Accuracy)
+	return timestampUpperLimit.After(u)
 }
 
 // Validate validates tst and returns the GenTime and Accuracy.
 // tst MUST be valid and the time stamped datum MUST match message.
-func (tst *TSTInfo) Validate(message []byte) (*TimestampLimit, error) {
+func (tst *TSTInfo) Validate(message []byte) (*Timestamp, error) {
 	if err := tst.validate(message); err != nil {
 		return nil, err
 	}
@@ -250,9 +265,9 @@ func (tst *TSTInfo) Validate(message []byte) (*TimestampLimit, error) {
 			time.Duration(tst.Accuracy.Microseconds)*time.Microsecond
 	}
 
-	return &TimestampLimit{
-		LowerLimit: tst.GenTime.Add(-accuracy),
-		UpperLimit: tst.GenTime.Add(accuracy),
+	return &Timestamp{
+		Value:    tst.GenTime,
+		Accuracy: accuracy,
 	}, nil
 }
 

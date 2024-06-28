@@ -192,6 +192,21 @@ func TestGetSigningCertificate(t *testing.T) {
 	}
 }
 
+func TestTimestamp(t *testing.T) {
+	timestamp := Timestamp{
+		Value:    time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC),
+		Accuracy: 5 * time.Second,
+	}
+
+	if !timestamp.Before(time.Date(2021, time.September, 17, 14, 9, 9, 0, time.UTC)) {
+		t.Fatal("timestamp.Before expected true, but got false")
+	}
+
+	if !timestamp.After(time.Date(2021, time.September, 17, 14, 9, 11, 0, time.UTC)) {
+		t.Fatal("timestamp.After expected true, but got false")
+	}
+}
+
 func TestValidate(t *testing.T) {
 	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
 	if err != nil {
@@ -214,17 +229,17 @@ func TestValidate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	timestampLimit, err := tstInfo.Validate([]byte("notation"))
+	timestamp, err := tstInfo.Validate([]byte("notation"))
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	expectedLowerLimit := time.Date(2021, time.September, 17, 14, 9, 9, 0, time.UTC)
-	expectedUpperLimit := time.Date(2021, time.September, 17, 14, 9, 11, 0, time.UTC)
-	if timestampLimit.LowerLimit != expectedLowerLimit {
-		t.Fatalf("expected timestamp %s, but got %s", expectedLowerLimit, timestampLimit.LowerLimit)
+	expectedTimestampValue := time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC)
+	expectedTimestampAccuracy := time.Second
+	if timestamp.Value != expectedTimestampValue {
+		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.Value)
 	}
-	if timestampLimit.UpperLimit != expectedUpperLimit {
-		t.Fatalf("expected timestamp %s, but got %s", expectedUpperLimit, timestampLimit.UpperLimit)
+	if timestamp.Accuracy != expectedTimestampAccuracy {
+		t.Fatalf("expected timestamp accuracy %s, but got %s", expectedTimestampAccuracy, timestamp.Accuracy)
 	}
 
 	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
@@ -237,17 +252,15 @@ func TestValidate(t *testing.T) {
 	}
 	tstInfo.Accuracy = Accuracy{}
 	tstInfo.Policy = oid.BaselineTimestampPolicy
-	timestampLimit, err = tstInfo.Validate([]byte("notation"))
+	timestamp, err = tstInfo.Validate([]byte("notation"))
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	expectedLowerLimit = time.Date(2021, time.September, 17, 14, 9, 9, 0, time.UTC)
-	expectedUpperLimit = time.Date(2021, time.September, 17, 14, 9, 11, 0, time.UTC)
-	if timestampLimit.LowerLimit != expectedLowerLimit {
-		t.Fatalf("expected timestamp %s, but got %s", expectedLowerLimit, timestampLimit.LowerLimit)
+	if timestamp.Value != expectedTimestampValue {
+		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.Value)
 	}
-	if timestampLimit.UpperLimit != expectedUpperLimit {
-		t.Fatalf("expected timestamp %s, but got %s", expectedUpperLimit, timestampLimit.UpperLimit)
+	if timestamp.Accuracy != expectedTimestampAccuracy {
+		t.Fatalf("expected timestamp accuracy %s, but got %s", expectedTimestampAccuracy, timestamp.Accuracy)
 	}
 }
 
