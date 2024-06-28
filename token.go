@@ -214,36 +214,7 @@ type TSTInfo struct {
 	Extensions     []pkix.Extension `asn1:"optional,tag:1"`
 }
 
-// Timestamp denotes the time at which the timestamp token was created by the TSA
-//
-// Reference: RFC 3161 2.4.2
-type Timestamp struct {
-	// Value is the GenTime of TSTInfo
-	Value time.Time
-
-	// Accuracy is the Accuracy of TSTInfo
-	Accuracy time.Duration
-}
-
-// BoundedBefore returns true if the upper limit of the time at which the
-// timestamp token was created is before or equal to u.
-//
-// Reference: RFC 3161 2.4.2
-func (t *Timestamp) BoundedBefore(u time.Time) bool {
-	timestampUpperLimit := t.Value.Add(t.Accuracy)
-	return timestampUpperLimit.Before(u) || timestampUpperLimit.Equal(u)
-}
-
-// BoundedAfter returns true if the lower limit of the time at which the
-// timestamp token was created is after or equal to u.
-//
-// Reference: RFC 3161 2.4.2
-func (t *Timestamp) BoundedAfter(u time.Time) bool {
-	timestampLowerLimit := t.Value.Add(-t.Accuracy)
-	return timestampLowerLimit.After(u) || timestampLowerLimit.Equal(u)
-}
-
-// Validate validates tst and returns the GenTime and Accuracy.
+// Validate validates tst and returns the Timestamp on success.
 // tst MUST be valid and the time stamped datum MUST match message.
 func (tst *TSTInfo) Validate(message []byte) (*Timestamp, error) {
 	if err := tst.validate(message); err != nil {
