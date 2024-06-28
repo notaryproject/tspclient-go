@@ -197,8 +197,8 @@ func TestTimestamp(t *testing.T) {
 	// [time.Date(2021, time.September, 17, 14, 9, 8, 0, time.UTC),
 	//  time.Date(2021, time.September, 17, 14, 9, 12, 0, time.UTC)]
 	timestamp := Timestamp{
-		GeneralizedTime: time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC),
-		Accuracy:        2 * time.Second,
+		Value:    time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC),
+		Accuracy: 2 * time.Second,
 	}
 	u1 := time.Date(2021, time.September, 17, 14, 9, 7, 0, time.UTC)
 	u2 := time.Date(2021, time.September, 17, 14, 9, 8, 0, time.UTC)
@@ -286,8 +286,8 @@ func TestValidate(t *testing.T) {
 	}
 	expectedTimestampValue := time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC)
 	expectedTimestampAccuracy := time.Second
-	if timestamp.GeneralizedTime != expectedTimestampValue {
-		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.GeneralizedTime)
+	if timestamp.Value != expectedTimestampValue {
+		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.Value)
 	}
 	if timestamp.Accuracy != expectedTimestampAccuracy {
 		t.Fatalf("expected timestamp accuracy %s, but got %s", expectedTimestampAccuracy, timestamp.Accuracy)
@@ -307,8 +307,8 @@ func TestValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	if timestamp.GeneralizedTime != expectedTimestampValue {
-		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.GeneralizedTime)
+	if timestamp.Value != expectedTimestampValue {
+		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.Value)
 	}
 	if timestamp.Accuracy != expectedTimestampAccuracy {
 		t.Fatalf("expected timestamp accuracy %s, but got %s", expectedTimestampAccuracy, timestamp.Accuracy)

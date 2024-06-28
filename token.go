@@ -218,8 +218,8 @@ type TSTInfo struct {
 //
 // Reference: RFC 3161 2.4.2
 type Timestamp struct {
-	// GeneralizedTime is the GenTime of TSTInfo
-	GeneralizedTime time.Time
+	// Value is the GenTime of TSTInfo
+	Value time.Time
 
 	// Accuracy is the Accuracy of TSTInfo
 	Accuracy time.Duration
@@ -230,7 +230,7 @@ type Timestamp struct {
 //
 // Reference: RFC 3161 2.4.2
 func (t *Timestamp) BoundedBefore(u time.Time) bool {
-	timestampUpperLimit := t.GeneralizedTime.Add(t.Accuracy)
+	timestampUpperLimit := t.Value.Add(t.Accuracy)
 	return timestampUpperLimit.Before(u) || timestampUpperLimit.Equal(u)
 }
 
@@ -239,7 +239,7 @@ func (t *Timestamp) BoundedBefore(u time.Time) bool {
 //
 // Reference: RFC 3161 2.4.2
 func (t *Timestamp) BoundedAfter(u time.Time) bool {
-	timestampLowerLimit := t.GeneralizedTime.Add(-t.Accuracy)
+	timestampLowerLimit := t.Value.Add(-t.Accuracy)
 	return timestampLowerLimit.After(u) || timestampLowerLimit.Equal(u)
 }
 
@@ -266,8 +266,8 @@ func (tst *TSTInfo) Validate(message []byte) (*Timestamp, error) {
 	}
 
 	return &Timestamp{
-		GeneralizedTime: tst.GenTime,
-		Accuracy:        accuracy,
+		Value:    tst.GenTime,
+		Accuracy: accuracy,
 	}, nil
 }
 
