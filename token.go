@@ -242,7 +242,7 @@ func (tst *TSTInfo) Validate(message []byte) (*TimestampLimit, error) {
 	if tst.Accuracy.Seconds == 0 &&
 		tst.Accuracy.Microseconds == 0 &&
 		tst.Accuracy.Milliseconds == 0 &&
-		oid.BaselineTimeStampPolicy.Equal(tst.Policy) {
+		oid.BaselineTimestampPolicy.Equal(tst.Policy) {
 		accuracy = 1 * time.Second
 	} else {
 		accuracy = time.Duration(tst.Accuracy.Seconds)*time.Second +

@@ -236,7 +236,7 @@ func TestValidate(t *testing.T) {
 		t.Fatal(err)
 	}
 	tstInfo.Accuracy = Accuracy{}
-	tstInfo.Policy = oid.BaselineTimeStampPolicy
+	tstInfo.Policy = oid.BaselineTimestampPolicy
 	timestampLimit, err = tstInfo.Validate([]byte("notation"))
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)

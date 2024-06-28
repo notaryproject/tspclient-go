@@ -328,7 +328,7 @@ func newTestTSA(malformedExtKeyUsage, criticalTimestampingExtKeyUsage bool) (*te
 		BasicConstraintsValid: true,
 	}
 	if criticalTimestampingExtKeyUsage {
-		extValue, err := asn1.Marshal([]asn1.ObjectIdentifier{oid.TimeStamping})
+		extValue, err := asn1.Marshal([]asn1.ObjectIdentifier{oid.Timestamping})
 		if err != nil {
 			return nil, err
 		}
@@ -414,7 +414,7 @@ func (tsa *testTSA) Timestamp(_ context.Context, req *Request) (*Response, error
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: token,
+		TimestampToken: token,
 	}, nil
 }
 

@@ -168,7 +168,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -187,7 +187,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -208,7 +208,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -227,7 +227,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -264,7 +264,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -286,7 +286,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -308,7 +308,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -332,7 +332,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}
@@ -355,7 +355,7 @@ func TestValidateResponse(t *testing.T) {
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: asn1.RawValue{
+		TimestampToken: asn1.RawValue{
 			FullBytes: token,
 		},
 	}

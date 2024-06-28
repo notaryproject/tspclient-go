@@ -107,7 +107,7 @@ type generalNames struct {
 //	 timeStampToken  TimeStampToken  OPTIONAL }
 type Response struct {
 	Status         pki.StatusInfo
-	TimeStampToken asn1.RawValue `asn1:"optional"`
+	TimestampToken asn1.RawValue `asn1:"optional"`
 }
 
 // MarshalBinary encodes the response to binary form.
@@ -138,7 +138,7 @@ func (r *Response) SignedToken() (*SignedToken, error) {
 	if err := r.validateStatus(); err != nil {
 		return nil, err
 	}
-	return ParseSignedToken(r.TimeStampToken.FullBytes)
+	return ParseSignedToken(r.TimestampToken.FullBytes)
 }
 
 // Validate checks if resp is a successful timestamp response against
