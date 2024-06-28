@@ -119,8 +119,8 @@ func TestTSATimestampGranted(t *testing.T) {
 	}
 	wantTimestampValue := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
 	wantTimestampAccuracy := time.Second
-	if timestamp.Value != wantTimestampValue {
-		t.Fatalf("TSTInfo.Timestamp() Timestamp = %v, want %v", wantTimestampValue, timestamp.Value)
+	if timestamp.GeneralizedTime != wantTimestampValue {
+		t.Fatalf("TSTInfo.Timestamp() Timestamp = %v, want %v", wantTimestampValue, timestamp.GeneralizedTime)
 	}
 	if timestamp.Accuracy != wantTimestampAccuracy {
 		t.Fatalf("TSTInfo.Timestamp() Timestamp Accuracy = %v, want %v", wantTimestampAccuracy, timestamp.Accuracy)
