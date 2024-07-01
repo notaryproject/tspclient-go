@@ -55,22 +55,21 @@ func TestNewRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, asn1.NullRawValue) {
-		t.Fatalf("expected %v, but got %v", asn1.NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
+	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, ASN1NullRawValue) {
+		t.Fatalf("expected %v, but got %v", ASN1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
 	}
 
-	expected := asn1.RawValue{Tag: 1}
 	opts = RequestOptions{
 		Content:                 message,
 		HashAlgorithm:           crypto.SHA256,
-		HashAlgorithmParameters: expected,
+		HashAlgorithmParameters: asn1.NullRawValue,
 	}
 	req, err = NewRequest(opts)
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, expected) {
-		t.Fatalf("expected %v, but got %v", expected, req.MessageImprint.HashAlgorithm.Parameters)
+	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, ASN1NullRawValue) {
+		t.Fatalf("expected %v, but got %v", ASN1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
 	}
 }
 

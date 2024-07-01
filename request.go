@@ -39,9 +39,24 @@ type MessageImprint struct {
 }
 
 // Equal compares if m and n are the same MessageImprint
+//
+// Reference: RFC 3161 2.4.2
 func (m MessageImprint) Equal(n MessageImprint) bool {
 	return m.HashAlgorithm.Algorithm.Equal(n.HashAlgorithm.Algorithm) &&
+		m.HashAlgorithm.Parameters.Class == n.HashAlgorithm.Parameters.Class &&
+		m.HashAlgorithm.Parameters.Tag == n.HashAlgorithm.Parameters.Tag &&
+		m.HashAlgorithm.Parameters.IsCompound == n.HashAlgorithm.Parameters.IsCompound &&
+		bytes.Equal(m.HashAlgorithm.Parameters.Bytes, n.HashAlgorithm.Parameters.Bytes) &&
+		bytes.Equal(m.HashAlgorithm.Parameters.FullBytes, n.HashAlgorithm.Parameters.FullBytes) &&
 		bytes.Equal(m.HashedMessage, n.HashedMessage)
+}
+
+// ASN1NullRawValue is the valid struct of asn1.NullRawValue
+//
+// https://pkg.go.dev/encoding/asn1#NullRawValue
+var ASN1NullRawValue = asn1.RawValue{
+	Tag:       5,
+	FullBytes: []byte{5, 0},
 }
 
 // Request is a time-stamping request.
@@ -118,8 +133,9 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
 	hashAlgParameter := opts.HashAlgorithmParameters
-	if reflect.DeepEqual(hashAlgParameter, asn1.RawValue{}) {
-		hashAlgParameter = asn1.NullRawValue
+	if reflect.DeepEqual(hashAlgParameter, asn1.RawValue{}) || reflect.DeepEqual(hashAlgParameter, asn1.NullRawValue) {
+		// the valid asn1 struct for null RawValue
+		hashAlgParameter = ASN1NullRawValue
 	}
 	var nonce *big.Int
 	if !opts.NoNonce {
