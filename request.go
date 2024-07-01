@@ -117,9 +117,9 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 	if err != nil {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
-	parameter := opts.HashAlgorithmParameters
-	if reflect.DeepEqual(parameter, asn1.RawValue{}) {
-		parameter = asn1.NullRawValue
+	hashAlgParameter := opts.HashAlgorithmParameters
+	if reflect.DeepEqual(hashAlgParameter, asn1.RawValue{}) {
+		hashAlgParameter = asn1.NullRawValue
 	}
 	var nonce *big.Int
 	if !opts.NoNonce {
@@ -138,7 +138,7 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 		MessageImprint: MessageImprint{
 			HashAlgorithm: pkix.AlgorithmIdentifier{
 				Algorithm:  hashAlg,
-				Parameters: parameter,
+				Parameters: hashAlgParameter,
 			},
 			HashedMessage: digest,
 		},

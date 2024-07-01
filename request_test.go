@@ -19,6 +19,7 @@ import (
 	"encoding/asn1"
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
@@ -60,9 +61,12 @@ func TestNewRequest(t *testing.T) {
 		Content:       message,
 		HashAlgorithm: crypto.SHA256,
 	}
-	_, err = NewRequest(opts)
+	req, err := NewRequest(opts)
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
+	}
+	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, asn1.NullRawValue) {
+		t.Fatalf("expected %v, but got %v", asn1.NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
 	}
 }
 
