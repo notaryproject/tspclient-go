@@ -51,7 +51,7 @@ func (m MessageImprint) Equal(n MessageImprint) bool {
 		bytes.Equal(m.HashedMessage, n.HashedMessage)
 }
 
-// ASN1NullRawValue is the valid struct of asn1.NullRawValue
+// ASN1NullRawValue represents the valid struct of asn1.NullRawValue
 //
 // https://pkg.go.dev/encoding/asn1#NullRawValue
 var ASN1NullRawValue = asn1.RawValue{
@@ -134,7 +134,6 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 	}
 	hashAlgParameter := opts.HashAlgorithmParameters
 	if reflect.DeepEqual(hashAlgParameter, asn1.RawValue{}) || reflect.DeepEqual(hashAlgParameter, asn1.NullRawValue) {
-		// the valid asn1 struct for null RawValue
 		hashAlgParameter = ASN1NullRawValue
 	}
 	var nonce *big.Int
