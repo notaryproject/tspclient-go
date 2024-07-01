@@ -47,6 +47,16 @@ func TestNewRequest(t *testing.T) {
 	}
 
 	opts = RequestOptions{
+		Content:                 message,
+		HashAlgorithm:           crypto.SHA256,
+		HashAlgorithmParameters: asn1.NullRawValue,
+	}
+	_, err = NewRequest(opts)
+	if err != nil {
+		t.Fatalf("expected nil error, but got %v", err)
+	}
+
+	opts = RequestOptions{
 		Content:       message,
 		HashAlgorithm: crypto.SHA256,
 	}

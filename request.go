@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"reflect"
 
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/internal/oid"
@@ -116,6 +117,10 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 	if err != nil {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
+	parameter := opts.HashAlgorithmParameters
+	if reflect.DeepEqual(parameter, asn1.RawValue{}) {
+		parameter = asn1.NullRawValue
+	}
 	var nonce *big.Int
 	if !opts.NoNonce {
 		if opts.Nonce != nil { // user provided Nonce, use it
@@ -133,7 +138,7 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 		MessageImprint: MessageImprint{
 			HashAlgorithm: pkix.AlgorithmIdentifier{
 				Algorithm:  hashAlg,
-				Parameters: opts.HashAlgorithmParameters,
+				Parameters: parameter,
 			},
 			HashedMessage: digest,
 		},
