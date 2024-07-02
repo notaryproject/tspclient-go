@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"reflect"
 
 	"github.com/notaryproject/tspclient-go/internal/encoding/asn1/rawvalue"
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
@@ -130,7 +129,7 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
 	hashAlgParameter := opts.HashAlgorithmParameters
-	if reflect.DeepEqual(hashAlgParameter, asn1.RawValue{}) || reflect.DeepEqual(hashAlgParameter, asn1.NullRawValue) {
+	if rawvalue.Equal(hashAlgParameter, asn1.RawValue{}) || rawvalue.Equal(hashAlgParameter, asn1.NullRawValue) {
 		hashAlgParameter = ASN1NullRawValue
 	}
 	var nonce *big.Int
