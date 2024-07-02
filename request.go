@@ -47,7 +47,8 @@ func (m MessageImprint) Equal(n MessageImprint) bool {
 		bytes.Equal(m.HashedMessage, n.HashedMessage)
 }
 
-// asn1NullRawValue represents the valid struct of asn1.NullRawValue
+// asn1NullRawValue is the full form of asn1.NullRawValue with its encoded self
+// in the `FullBytes` field.
 //
 // https://pkg.go.dev/encoding/asn1#NullRawValue
 var asn1NullRawValue = asn1.RawValue{
