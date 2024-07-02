@@ -55,8 +55,8 @@ func (m MessageImprint) Equal(n MessageImprint) bool {
 //
 // https://pkg.go.dev/encoding/asn1#NullRawValue
 var ASN1NullRawValue = asn1.RawValue{
-	Tag:       5,
-	FullBytes: []byte{5, 0},
+	Tag:       asn1.TagNull,
+	FullBytes: []byte{asn1.TagNull, 0},
 }
 
 // Request is a time-stamping request.
