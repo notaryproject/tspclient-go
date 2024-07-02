@@ -15,7 +15,7 @@
 // Syntax (CMS) / PKCS7
 //
 // References:
-// - RFC 5652 Cryptographic Message Syntax (CMS): https://datatracker.ietf.org/doc/html/rfc5652
+// - RFC 5652 Cryptographic Message Syntax (CMS)
 package cms
 
 import (
