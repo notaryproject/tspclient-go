@@ -13,8 +13,7 @@
 
 // Package tspclient generates timestamping requests to TSA servers,
 // fetches and verifies the responses according to
-// RFC 3161: https://datatracker.ietf.org/doc/html/rfc3161 &
-// RFC 5816: https://datatracker.ietf.org/doc/html/rfc5816
+// RFC 3161 & RFC 5816
 package tspclient
 
 import "context"
