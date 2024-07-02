@@ -144,17 +144,17 @@ func (r *Response) SignedToken() (*SignedToken, error) {
 // Validate checks if resp is a successful timestamp response against
 // its corresponding request based on RFC 3161.
 // It is used when a timestamp requestor receives the response from TSA.
-func (resp *Response) Validate(req *Request) error {
+func (r *Response) Validate(req *Request) error {
 	if req == nil {
 		return &InvalidResponseError{Msg: "missing corresponding request"}
 	}
-	if resp == nil {
+	if r == nil {
 		return &InvalidResponseError{Msg: "response cannot be nil"}
 	}
-	if err := resp.validateStatus(); err != nil {
+	if err := r.validateStatus(); err != nil {
 		return err
 	}
-	token, err := resp.SignedToken()
+	token, err := r.SignedToken()
 	if err != nil {
 		return &InvalidResponseError{Detail: err}
 	}

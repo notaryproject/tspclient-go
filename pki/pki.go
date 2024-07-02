@@ -117,9 +117,9 @@ func (fi FailureInfo) Error() error {
 //	 statusString    PKIFreeText     OPTIONAL,
 //	 failInfo        PKIFailureInfo  OPTIONAL }
 //
-// PKIStatus        ::= INTEGER
-// PKIFreeText      ::= SEQUENCE SIZE (1..MAX) OF UTF8String
-// PKIFailureInfo   ::= BIT STRING
+//	PKIStatus        ::= INTEGER
+//	PKIFreeText      ::= SEQUENCE SIZE (1..MAX) OF UTF8String
+//	PKIFailureInfo   ::= BIT STRING
 //
 // Reference: RFC 3161 2.4.2
 type StatusInfo struct {

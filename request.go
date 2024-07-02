@@ -183,20 +183,20 @@ func (r *Request) UnmarshalBinary(data []byte) error {
 
 // Validate checks if req is a valid request against RFC 3161.
 // It is used before a timstamp requestor sending the request to TSA.
-func (req *Request) Validate() error {
-	if req == nil {
+func (r *Request) Validate() error {
+	if r == nil {
 		return &MalformedRequestError{Msg: "request cannot be nil"}
 	}
-	if req.Version != 1 {
-		return &MalformedRequestError{Msg: fmt.Sprintf("request version must be 1, but got %d", req.Version)}
+	if r.Version != 1 {
+		return &MalformedRequestError{Msg: fmt.Sprintf("request version must be 1, but got %d", r.Version)}
 	}
-	hashAlg := req.MessageImprint.HashAlgorithm.Algorithm
+	hashAlg := r.MessageImprint.HashAlgorithm.Algorithm
 	hash, available := oid.ToHash(hashAlg)
 	if !available {
 		return &MalformedRequestError{Msg: fmt.Sprintf("hash algorithm %v is unavailable", hashAlg)}
 	}
-	if hash.Size() != len(req.MessageImprint.HashedMessage) {
-		return &MalformedRequestError{Msg: fmt.Sprintf("hashed message is of incorrect size %d", len(req.MessageImprint.HashedMessage))}
+	if hash.Size() != len(r.MessageImprint.HashedMessage) {
+		return &MalformedRequestError{Msg: fmt.Sprintf("hashed message is of incorrect size %d", len(r.MessageImprint.HashedMessage))}
 	}
 	return nil
 }
