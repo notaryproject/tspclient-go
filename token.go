@@ -214,16 +214,31 @@ type TSTInfo struct {
 	Extensions     []pkix.Extension `asn1:"optional,tag:1"`
 }
 
-// Validate validates tst and returns the GenTime and Accuracy.
+// Validate validates tst and returns the Timestamp on success.
 // tst MUST be valid and the time stamped datum MUST match message.
-func (tst *TSTInfo) Validate(message []byte) (time.Time, time.Duration, error) {
+func (tst *TSTInfo) Validate(message []byte) (*Timestamp, error) {
 	if err := tst.validate(message); err != nil {
-		return time.Time{}, 0, err
+		return nil, err
 	}
-	accuracy := time.Duration(tst.Accuracy.Seconds)*time.Second +
-		time.Duration(tst.Accuracy.Milliseconds)*time.Millisecond +
-		time.Duration(tst.Accuracy.Microseconds)*time.Microsecond
-	return tst.GenTime, accuracy, nil
+
+	var accuracy time.Duration
+	// References:
+	// https://github.com/notaryproject/specifications/blob/main/specs/trust-store-trust-policy.md#steps
+	if tst.Accuracy.Seconds == 0 &&
+		tst.Accuracy.Microseconds == 0 &&
+		tst.Accuracy.Milliseconds == 0 &&
+		oid.BaselineTimestampPolicy.Equal(tst.Policy) {
+		accuracy = 1 * time.Second
+	} else {
+		accuracy = time.Duration(tst.Accuracy.Seconds)*time.Second +
+			time.Duration(tst.Accuracy.Milliseconds)*time.Millisecond +
+			time.Duration(tst.Accuracy.Microseconds)*time.Microsecond
+	}
+
+	return &Timestamp{
+		Value:    tst.GenTime,
+		Accuracy: accuracy,
+	}, nil
 }
 
 // validate checks tst against RFC 3161.

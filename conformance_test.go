@@ -113,17 +113,17 @@ func TestTSATimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	ts, accuracy, err := info.Validate(message)
+	timestamp, err := info.Validate(message)
 	if err != nil {
 		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}
-	wantTimestamp := now
-	if ts != wantTimestamp {
-		t.Errorf("TSTInfo.Timestamp() Timestamp = %v, want %v", ts, wantTimestamp)
+	wantTimestampValue := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
+	wantTimestampAccuracy := time.Second
+	if timestamp.Value != wantTimestampValue {
+		t.Fatalf("TSTInfo.Timestamp() Timestamp = %v, want %v", wantTimestampValue, timestamp.Value)
 	}
-	wantAccuracy := time.Second
-	if accuracy != wantAccuracy {
-		t.Errorf("TSTInfo.Timestamp() Accuracy = %v, want %v", accuracy, wantAccuracy)
+	if timestamp.Accuracy != wantTimestampAccuracy {
+		t.Fatalf("TSTInfo.Timestamp() Timestamp Accuracy = %v, want %v", wantTimestampAccuracy, timestamp.Accuracy)
 	}
 }
 
@@ -328,7 +328,7 @@ func newTestTSA(malformedExtKeyUsage, criticalTimestampingExtKeyUsage bool) (*te
 		BasicConstraintsValid: true,
 	}
 	if criticalTimestampingExtKeyUsage {
-		extValue, err := asn1.Marshal([]asn1.ObjectIdentifier{oid.TimeStamping})
+		extValue, err := asn1.Marshal([]asn1.ObjectIdentifier{oid.Timestamping})
 		if err != nil {
 			return nil, err
 		}
@@ -414,7 +414,7 @@ func (tsa *testTSA) Timestamp(_ context.Context, req *Request) (*Response, error
 		Status: pki.StatusInfo{
 			Status: pki.StatusGranted,
 		},
-		TimeStampToken: token,
+		TimestampToken: token,
 	}, nil
 }
 

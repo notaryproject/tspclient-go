@@ -93,8 +93,17 @@ var (
 	// Reference: https://www.rfc-editor.org/rfc/rfc5280.html#section-4.2.1.12
 	ExtKeyUsage = asn1.ObjectIdentifier{2, 5, 29, 37}
 
-	// TimeStamping (id-kp-timeStamping) is defined in RFC 3161 2.3
+	// Timestamping (id-kp-timeStamping) is defined in RFC 3161 2.3
 	//
 	// Reference: https://datatracker.ietf.org/doc/html/rfc3161#section-2.3
-	TimeStamping = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 8}
+	Timestamping = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 3, 8}
+)
+
+// OIDs for RFC 3628 Policy Requirements for Time-Stamping Authorities (TSAs)
+var (
+	// BaselineTimestampPolicy (baseline time-stamp policy) is defined in
+	// RFC 3628
+	//
+	// Referene: https://datatracker.ietf.org/doc/html/rfc3628#section-5.2
+	BaselineTimestampPolicy = asn1.ObjectIdentifier{0, 4, 0, 2023, 1, 1}
 )
