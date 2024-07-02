@@ -40,10 +40,10 @@ func TestHTTPTimestampGranted(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
-			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
+			t.Fatalf("TimestampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
 		if _, err := io.ReadAll(r.Body); err != nil {
-			t.Fatalf("TimeStampRequest.Body read error = %v", err)
+			t.Fatalf("TimestampRequest.Body read error = %v", err)
 		}
 
 		// write reply
@@ -122,17 +122,17 @@ func TestHTTPTimestampGranted(t *testing.T) {
 	if err != nil {
 		t.Fatal("SignedToken.Info() error =", err)
 	}
-	timestamp, accuracy, err := info.Validate(message)
+	timestamp, err := info.Validate(message)
 	if err != nil {
 		t.Errorf("TSTInfo.Timestamp() error = %v", err)
 	}
-	wantTimestamp := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
-	if timestamp != wantTimestamp {
-		t.Errorf("TSTInfo.Timestamp() Timestamp = %v, want %v", timestamp, wantTimestamp)
+	wantTimestampValue := time.Date(2021, 9, 18, 11, 54, 34, 0, time.UTC)
+	wantTimestampAccuracy := time.Second
+	if timestamp.Value != wantTimestampValue {
+		t.Fatalf("TSTInfo.Timestamp() Timestamp = %v, want %v", wantTimestampValue, timestamp.Value)
 	}
-	wantAccuracy := time.Second
-	if accuracy != wantAccuracy {
-		t.Errorf("TSTInfo.Timestamp() Accuracy = %v, want %v", accuracy, wantAccuracy)
+	if timestamp.Accuracy != wantTimestampAccuracy {
+		t.Fatalf("TSTInfo.Timestamp() Timestamp Accuracy = %v, want %v", wantTimestampAccuracy, timestamp.Accuracy)
 	}
 }
 
@@ -145,10 +145,10 @@ func TestHTTPTimestampRejection(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
-			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
+			t.Fatalf("TimestampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
 		if _, err := io.ReadAll(r.Body); err != nil {
-			t.Fatalf("TimeStampRequest.Body read error = %v", err)
+			t.Fatalf("TimestampRequest.Body read error = %v", err)
 		}
 
 		// write reply
@@ -267,10 +267,10 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
-			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
+			t.Fatalf("TimestampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
 		if _, err := io.ReadAll(r.Body); err != nil {
-			t.Fatalf("TimeStampRequest.Body read error = %v", err)
+			t.Fatalf("TimestampRequest.Body read error = %v", err)
 		}
 
 		// write reply
@@ -308,10 +308,10 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
-			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
+			t.Fatalf("TimestampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
 		if _, err := io.ReadAll(r.Body); err != nil {
-			t.Fatalf("TimeStampRequest.Body read error = %v", err)
+			t.Fatalf("TimestampRequest.Body read error = %v", err)
 		}
 
 		// write reply
@@ -334,10 +334,10 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	ts3 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
-			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
+			t.Fatalf("TimestampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
 		if _, err := io.ReadAll(r.Body); err != nil {
-			t.Fatalf("TimeStampRequest.Body read error = %v", err)
+			t.Fatalf("TimestampRequest.Body read error = %v", err)
 		}
 
 		// write reply
@@ -363,10 +363,10 @@ func TestHttpTimestamperTimestamp(t *testing.T) {
 	ts4 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		const wantContentType = MediaTypeTimestampQuery
 		if got := r.Header.Get("Content-Type"); got != wantContentType {
-			t.Fatalf("TimeStampRequest.ContentType = %v, want %v", err, wantContentType)
+			t.Fatalf("TimestampRequest.ContentType = %v, want %v", err, wantContentType)
 		}
 		if _, err := io.ReadAll(r.Body); err != nil {
-			t.Fatalf("TimeStampRequest.Body read error = %v", err)
+			t.Fatalf("TimestampRequest.Body read error = %v", err)
 		}
 
 		// write reply

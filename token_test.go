@@ -192,7 +192,7 @@ func TestGetSigningCertificate(t *testing.T) {
 	}
 }
 
-func TestTimestamp(t *testing.T) {
+func TestValidate(t *testing.T) {
 	timestampToken, err := getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
 	if err != nil {
 		t.Fatal(err)
@@ -202,7 +202,7 @@ func TestTimestamp(t *testing.T) {
 		t.Fatal(err)
 	}
 	expectedErrMsg := "invalid TSTInfo: mismatched message"
-	if _, _, err := tstInfo.Validate([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
+	if _, err := tstInfo.Validate([]byte("invalid")); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 
@@ -214,16 +214,38 @@ func TestTimestamp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	timestamp, accuracy, err := tstInfo.Validate([]byte("notation"))
+	timestamp, err := tstInfo.Validate([]byte("notation"))
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	expectedTimestamp := time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC)
-	if timestamp != expectedTimestamp {
-		t.Fatalf("expected timestamp %s, but got %s", expectedTimestamp, timestamp)
+	expectedTimestampValue := time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC)
+	expectedTimestampAccuracy := time.Second
+	if timestamp.Value != expectedTimestampValue {
+		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.Value)
 	}
-	if accuracy.Seconds() != 1 {
-		t.Fatalf("expected 1s accuracy, but got %s", accuracy)
+	if timestamp.Accuracy != expectedTimestampAccuracy {
+		t.Fatalf("expected timestamp accuracy %s, but got %s", expectedTimestampAccuracy, timestamp.Accuracy)
+	}
+
+	timestampToken, err = getTimestampTokenFromPath("testdata/TimeStampToken.p7s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tstInfo, err = timestampToken.Info()
+	if err != nil {
+		t.Fatal(err)
+	}
+	tstInfo.Accuracy = Accuracy{}
+	tstInfo.Policy = oid.BaselineTimestampPolicy
+	timestamp, err = tstInfo.Validate([]byte("notation"))
+	if err != nil {
+		t.Fatalf("expected nil error, but got %v", err)
+	}
+	if timestamp.Value != expectedTimestampValue {
+		t.Fatalf("expected timestamp value %s, but got %s", expectedTimestampValue, timestamp.Value)
+	}
+	if timestamp.Accuracy != expectedTimestampAccuracy {
+		t.Fatalf("expected timestamp accuracy %s, but got %s", expectedTimestampAccuracy, timestamp.Accuracy)
 	}
 }
 
