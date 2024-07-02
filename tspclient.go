@@ -12,8 +12,7 @@
 // limitations under the License.
 
 // Package tspclient generates timestamping requests to TSA servers,
-// fetches and verifies the responses according to
-// RFC 3161 & RFC 5816
+// fetches and verifies the responses according to RFC 3161 and RFC 5816
 package tspclient
 
 import "context"
