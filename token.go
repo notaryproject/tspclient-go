@@ -223,7 +223,6 @@ func (tst *TSTInfo) Validate(message []byte) (*Timestamp, error) {
 
 	var accuracy time.Duration
 	// References:
-	// https://datatracker.ietf.org/doc/html/rfc3628#section-5.1
 	// https://github.com/notaryproject/specifications/blob/main/specs/trust-store-trust-policy.md#steps
 	if tst.Accuracy.Seconds == 0 &&
 		tst.Accuracy.Microseconds == 0 &&
