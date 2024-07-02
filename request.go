@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"reflect"
 
+	"github.com/notaryproject/tspclient-go/internal/encoding/asn1/rawvalue"
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/internal/oid"
 )
@@ -43,11 +44,7 @@ type MessageImprint struct {
 // Reference: RFC 3161 2.4.2
 func (m MessageImprint) Equal(n MessageImprint) bool {
 	return m.HashAlgorithm.Algorithm.Equal(n.HashAlgorithm.Algorithm) &&
-		m.HashAlgorithm.Parameters.Class == n.HashAlgorithm.Parameters.Class &&
-		m.HashAlgorithm.Parameters.Tag == n.HashAlgorithm.Parameters.Tag &&
-		m.HashAlgorithm.Parameters.IsCompound == n.HashAlgorithm.Parameters.IsCompound &&
-		bytes.Equal(m.HashAlgorithm.Parameters.Bytes, n.HashAlgorithm.Parameters.Bytes) &&
-		bytes.Equal(m.HashAlgorithm.Parameters.FullBytes, n.HashAlgorithm.Parameters.FullBytes) &&
+		rawvalue.Equal(m.HashAlgorithm.Parameters, n.HashAlgorithm.Parameters) &&
 		bytes.Equal(m.HashedMessage, n.HashedMessage)
 }
 
