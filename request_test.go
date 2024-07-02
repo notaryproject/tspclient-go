@@ -55,8 +55,8 @@ func TestNewRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, ASN1NullRawValue) {
-		t.Fatalf("expected %v, but got %v", ASN1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
+	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, asn1NullRawValue) {
+		t.Fatalf("expected %v, but got %v", asn1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
 	}
 
 	opts = RequestOptions{
@@ -68,8 +68,8 @@ func TestNewRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, but got %v", err)
 	}
-	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, ASN1NullRawValue) {
-		t.Fatalf("expected %v, but got %v", ASN1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
+	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, asn1NullRawValue) {
+		t.Fatalf("expected %v, but got %v", asn1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
 	}
 }
 

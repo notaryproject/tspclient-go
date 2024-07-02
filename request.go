@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/notaryproject/tspclient-go/internal/encoding/asn1/rawvalue"
+	tspclientasn1 "github.com/notaryproject/tspclient-go/internal/encoding/asn1"
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/internal/oid"
 )
@@ -43,14 +43,14 @@ type MessageImprint struct {
 // Reference: RFC 3161 2.4.2
 func (m MessageImprint) Equal(n MessageImprint) bool {
 	return m.HashAlgorithm.Algorithm.Equal(n.HashAlgorithm.Algorithm) &&
-		rawvalue.Equal(m.HashAlgorithm.Parameters, n.HashAlgorithm.Parameters) &&
+		tspclientasn1.EqualRawValue(m.HashAlgorithm.Parameters, n.HashAlgorithm.Parameters) &&
 		bytes.Equal(m.HashedMessage, n.HashedMessage)
 }
 
-// ASN1NullRawValue represents the valid struct of asn1.NullRawValue
+// asn1NullRawValue represents the valid struct of asn1.NullRawValue
 //
 // https://pkg.go.dev/encoding/asn1#NullRawValue
-var ASN1NullRawValue = asn1.RawValue{
+var asn1NullRawValue = asn1.RawValue{
 	Tag:       asn1.TagNull,
 	FullBytes: []byte{asn1.TagNull, 0},
 }
@@ -129,8 +129,8 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
 	hashAlgParameter := opts.HashAlgorithmParameters
-	if rawvalue.Equal(hashAlgParameter, asn1.RawValue{}) || rawvalue.Equal(hashAlgParameter, asn1.NullRawValue) {
-		hashAlgParameter = ASN1NullRawValue
+	if tspclientasn1.EqualRawValue(hashAlgParameter, asn1.RawValue{}) || tspclientasn1.EqualRawValue(hashAlgParameter, asn1.NullRawValue) {
+		hashAlgParameter = asn1NullRawValue
 	}
 	var nonce *big.Int
 	if !opts.NoNonce {

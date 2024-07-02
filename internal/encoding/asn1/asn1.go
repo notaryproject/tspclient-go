@@ -11,27 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rawvalue
+package asn1
 
 import (
+	"bytes"
 	"encoding/asn1"
-	"testing"
 )
 
-func TestEqual(t *testing.T) {
-	m := asn1.RawValue{
-		Tag:       asn1.TagNull,
-		FullBytes: []byte{asn1.TagNull, 0},
-	}
-	n := asn1.NullRawValue
-	n.FullBytes = []byte{asn1.TagNull, 0}
-
-	if !Equal(m, n) {
-		t.Fatal("expected to be equal")
-	}
-
-	n = asn1.NullRawValue
-	if Equal(m, n) {
-		t.Fatal("expected to be unequal")
-	}
+// EqualRawValue returns true if two asn1.RawValue are equal
+func EqualRawValue(m asn1.RawValue, n asn1.RawValue) bool {
+	return m.Class == n.Class &&
+		m.Tag == n.Tag &&
+		m.IsCompound == n.IsCompound &&
+		bytes.Equal(m.Bytes, n.Bytes) &&
+		bytes.Equal(m.FullBytes, n.FullBytes)
 }
