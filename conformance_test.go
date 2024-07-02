@@ -557,12 +557,12 @@ func (tsa *testTSA) generateSignedData(infoBytes []byte, requestCert bool) (cms.
 func convertToRawASN1(val interface{}, params string) (asn1.RawValue, error) {
 	b, err := asn1.MarshalWithParams(val, params)
 	if err != nil {
-		return asn1.NullRawValue, err
+		return asn1NullRawValue, err
 	}
 	var raw asn1.RawValue
 	_, err = asn1.UnmarshalWithParams(b, &raw, params)
 	if err != nil {
-		return asn1.NullRawValue, err
+		return asn1NullRawValue, err
 	}
 	return raw, nil
 }

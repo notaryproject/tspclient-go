@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"math/big"
 
+	tspclientasn1 "github.com/notaryproject/tspclient-go/internal/encoding/asn1"
 	"github.com/notaryproject/tspclient-go/internal/hashutil"
 	"github.com/notaryproject/tspclient-go/internal/oid"
 )
@@ -38,9 +39,21 @@ type MessageImprint struct {
 }
 
 // Equal compares if m and n are the same MessageImprint
+//
+// Reference: RFC 3161 2.4.2
 func (m MessageImprint) Equal(n MessageImprint) bool {
 	return m.HashAlgorithm.Algorithm.Equal(n.HashAlgorithm.Algorithm) &&
+		tspclientasn1.EqualRawValue(m.HashAlgorithm.Parameters, n.HashAlgorithm.Parameters) &&
 		bytes.Equal(m.HashedMessage, n.HashedMessage)
+}
+
+// asn1NullRawValue is the full form of asn1.NullRawValue with its encoded self
+// in the `FullBytes` field.
+//
+// https://pkg.go.dev/encoding/asn1#NullRawValue
+var asn1NullRawValue = asn1.RawValue{
+	Tag:       asn1.TagNull,
+	FullBytes: []byte{asn1.TagNull, 0},
 }
 
 // Request is a time-stamping request.
@@ -116,6 +129,10 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 	if err != nil {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
+	hashAlgParameter := opts.HashAlgorithmParameters
+	if tspclientasn1.EqualRawValue(hashAlgParameter, asn1.RawValue{}) || tspclientasn1.EqualRawValue(hashAlgParameter, asn1.NullRawValue) {
+		hashAlgParameter = asn1NullRawValue
+	}
 	var nonce *big.Int
 	if !opts.NoNonce {
 		if opts.Nonce != nil { // user provided Nonce, use it
@@ -133,7 +150,7 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 		MessageImprint: MessageImprint{
 			HashAlgorithm: pkix.AlgorithmIdentifier{
 				Algorithm:  hashAlg,
-				Parameters: opts.HashAlgorithmParameters,
+				Parameters: hashAlgParameter,
 			},
 			HashedMessage: digest,
 		},
