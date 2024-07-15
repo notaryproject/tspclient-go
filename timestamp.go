@@ -52,5 +52,5 @@ func (t *Timestamp) BoundedAfter(u time.Time) bool {
 func (t *Timestamp) Format(layout string) string {
 	lowerBound := t.Value.Add(-t.Accuracy)
 	upperBound := t.Value.Add(t.Accuracy)
-	return fmt.Sprintf("[%v, %v]", lowerBound.Format(layout), upperBound.Format(layout))
+	return fmt.Sprintf("[%s, %s]", lowerBound.Format(layout), upperBound.Format(layout))
 }
