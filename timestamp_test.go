@@ -83,3 +83,18 @@ func TestTimestamp(t *testing.T) {
 		t.Fatal("timestamp.BoundedAfter expected false, but got true")
 	}
 }
+
+func TestString(t *testing.T) {
+	// timestamp range:
+	// [time.Date(2021, time.September, 17, 14, 9, 8, 0, time.UTC),
+	//  time.Date(2021, time.September, 17, 14, 9, 12, 0, time.UTC)]
+	timestamp := Timestamp{
+		Value:    time.Date(2021, time.September, 17, 14, 9, 10, 0, time.UTC),
+		Accuracy: 2 * time.Second,
+	}
+
+	expectedStr := "[2021-09-17T14:09:08Z, 2021-09-17T14:09:12Z]"
+	if timestamp.Format(time.RFC3339) != expectedStr {
+		t.Fatalf("expected %s, but got %s", expectedStr, timestamp.Format(time.RFC3339))
+	}
+}
