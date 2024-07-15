@@ -47,7 +47,7 @@ func (t *Timestamp) BoundedAfter(u time.Time) bool {
 	return timestampLowerLimit.After(u) || timestampLowerLimit.Equal(u)
 }
 
-// String prints out t as a timestamp range calculated with its accuracy.
+// String returns a string of t as a timestamp range calculated with its accuracy.
 func (t *Timestamp) String() string {
 	return fmt.Sprintf("timestamp range: [%v, %v]", t.Value.Add(-t.Accuracy), t.Value.Add(t.Accuracy))
 }
