@@ -13,7 +13,10 @@
 
 package tspclient
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Timestamp denotes the time at which the timestamp token was created by the TSA
 //
@@ -42,4 +45,9 @@ func (t *Timestamp) BoundedBefore(u time.Time) bool {
 func (t *Timestamp) BoundedAfter(u time.Time) bool {
 	timestampLowerLimit := t.Value.Add(-t.Accuracy)
 	return timestampLowerLimit.After(u) || timestampLowerLimit.Equal(u)
+}
+
+// String prints out t as a timestamp range calculated with its accuracy.
+func (t *Timestamp) String() string {
+	return fmt.Sprintf("timestamp range: [%v, %v]", t.Value.Add(-t.Accuracy), t.Value.Add(t.Accuracy))
 }
