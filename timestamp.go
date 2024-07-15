@@ -47,7 +47,10 @@ func (t *Timestamp) BoundedAfter(u time.Time) bool {
 	return timestampLowerLimit.After(u) || timestampLowerLimit.Equal(u)
 }
 
-// String returns a string of t as a timestamp range calculated with its accuracy.
-func (t *Timestamp) String() string {
-	return fmt.Sprintf("timestamp range: [%v, %v]", t.Value.Add(-t.Accuracy), t.Value.Add(t.Accuracy))
+// Format returns a string of t in format layout.
+// The output is a timestamp range calculated with its accuracy.
+func (t *Timestamp) Format(layout string) string {
+	lowerBound := t.Value.Add(-t.Accuracy)
+	upperBound := t.Value.Add(t.Accuracy)
+	return fmt.Sprintf("[%v, %v]", lowerBound.Format(layout), upperBound.Format(layout))
 }

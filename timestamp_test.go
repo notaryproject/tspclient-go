@@ -93,8 +93,8 @@ func TestString(t *testing.T) {
 		Accuracy: 2 * time.Second,
 	}
 
-	expectedStr := "timestamp range: [2021-09-17 14:09:08 +0000 UTC, 2021-09-17 14:09:12 +0000 UTC]"
-	if timestamp.String() != expectedStr {
-		t.Fatalf("expected %s, but got %s", expectedStr, timestamp.String())
+	expectedStr := "[2021-09-17T14:09:08Z, 2021-09-17T14:09:12Z]"
+	if timestamp.Format(time.RFC3339) != expectedStr {
+		t.Fatalf("expected %s, but got %s", expectedStr, timestamp.Format(time.RFC3339))
 	}
 }
