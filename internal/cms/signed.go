@@ -248,14 +248,17 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 
 	// verify attributes if present
 	if len(signerInfo.SignedAttributes) == 0 {
-		if d.ContentType.Equal(oid.Data) {
-			return nil, nil
-		}
-		// signed attributes MUST be present if the content type of the
-		// EncapsulatedContentInfo value being signed is not id-data.
+		// According to RFC 5652, if the Content Type is id-data, signed
+		// attributes can be empty. However, the CMS package is designed for
+		// timestamp (RFC 3161) and the content type must be id-ct-TSTInfo,
+		// so we require signed attributes to be present.
 		return nil, VerificationError{Message: "missing signed attributes"}
 	}
 
+	// The content type must be id-ct-TSTInfo for timestamp (RFC 3161).
+	if !oid.TSTInfo.Equal(d.ContentType) {
+		return nil, fmt.Errorf("unexpected content type: %v", d.ContentType)
+	}
 	var contentType asn1.ObjectIdentifier
 	if err := signerInfo.SignedAttributes.Get(oid.ContentType, &contentType); err != nil {
 		return nil, VerificationError{Message: "invalid content type", Detail: err}

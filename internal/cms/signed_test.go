@@ -160,7 +160,12 @@ func TestVerify(t *testing.T) {
 		{
 			name:     "id-data content type without signed attributes",
 			filePath: "testdata/SignedDataWithoutSignedAttributes.p7s",
-			wantErr:  false,
+			wantErr:  true,
+		},
+		{
+			name:     "invalid content type",
+			filePath: "testdata/TimeStampTokenWithInvalidContentType.p7s",
+			wantErr:  true,
 		},
 		{
 			name:     "an invalid and a valid signer info",
