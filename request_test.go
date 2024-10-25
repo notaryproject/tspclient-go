@@ -19,6 +19,7 @@ import (
 	"encoding/asn1"
 	"errors"
 	"fmt"
+	"math/big"
 	"reflect"
 	"testing"
 
@@ -71,6 +72,21 @@ func TestNewRequest(t *testing.T) {
 	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, asn1NullRawValue) {
 		t.Fatalf("expected %v, but got %v", asn1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
 	}
+
+	nonceGenerator = func() (*big.Int, error) {
+		return nil, errors.New("failed to generate nonce")
+	}
+	opts = RequestOptions{
+		Content:       message,
+		HashAlgorithm: crypto.SHA256,
+	}
+	expectedErrMsg = "malformed timestamping request: failed to generate nonce"
+	_, err = NewRequest(opts)
+	if err == nil || !errors.As(err, &malformedRequest) || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+	// clean up
+	nonceGenerator = generateNonce
 }
 
 func TestRequestMarshalBinary(t *testing.T) {

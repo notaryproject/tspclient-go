@@ -28,6 +28,9 @@ import (
 	"github.com/notaryproject/tspclient-go/internal/oid"
 )
 
+// nonceGenerator generates nonce. Used for unit test
+var nonceGenerator func() (*big.Int, error) = generateNonce
+
 // MessageImprint contains the hash of the datum to be time-stamped.
 //
 //	MessageImprint ::= SEQUENCE {
@@ -121,7 +124,7 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 	if tspclientasn1.EqualRawValue(hashAlgParameter, asn1.RawValue{}) || tspclientasn1.EqualRawValue(hashAlgParameter, asn1.NullRawValue) {
 		hashAlgParameter = asn1NullRawValue
 	}
-	nonce, err := generateNonce()
+	nonce, err := nonceGenerator()
 	if err != nil {
 		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
