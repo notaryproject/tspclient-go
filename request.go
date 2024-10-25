@@ -94,18 +94,6 @@ type RequestOptions struct {
 	// Reference: https://datatracker.ietf.org/doc/html/rfc3161#section-2.4.1
 	ReqPolicy asn1.ObjectIdentifier
 
-	// NoNonce disables any Nonce usage. When set to true, the Nonce field is
-	// ignored, and no built-in Nonce will be generated. OPTIONAL.
-	NoNonce bool
-
-	// Nonce is a large random number with a high probability that the client
-	// generates it only once. The same nonce is included and validated in the
-	// response. It is only used when NoNonce is not set to true.
-	//
-	// When this field is nil, a built-in Nonce will be generated and sent to
-	// the TSA. OPTIONAL.
-	Nonce *big.Int
-
 	// NoCert tells the TSA to not include any signing certificate in its
 	// response. By default, TSA signing certificate is included in the response.
 	// OPTIONAL.
@@ -133,17 +121,9 @@ func NewRequest(opts RequestOptions) (*Request, error) {
 	if tspclientasn1.EqualRawValue(hashAlgParameter, asn1.RawValue{}) || tspclientasn1.EqualRawValue(hashAlgParameter, asn1.NullRawValue) {
 		hashAlgParameter = asn1NullRawValue
 	}
-	var nonce *big.Int
-	if !opts.NoNonce {
-		if opts.Nonce != nil { // user provided Nonce, use it
-			nonce = opts.Nonce
-		} else { // user ignored Nonce, use built-in Nonce
-			var err error
-			nonce, err = generateNonce()
-			if err != nil {
-				return nil, &MalformedRequestError{Msg: err.Error()}
-			}
-		}
+	nonce, err := generateNonce()
+	if err != nil {
+		return nil, &MalformedRequestError{Msg: err.Error()}
 	}
 	return &Request{
 		Version: 1,

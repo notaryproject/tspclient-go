@@ -67,12 +67,12 @@ func TestHTTPTimestampGranted(t *testing.T) {
 			Tag:       5,
 			FullBytes: []byte{5, 0},
 		},
-		NoNonce: true,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
 		t.Fatalf("NewRequest() error = %v", err)
 	}
+	req.Nonce = nil
 	ctx := context.Background()
 	resp, err := tsa.Timestamp(ctx, req)
 	if err != nil {
