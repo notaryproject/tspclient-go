@@ -249,13 +249,14 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 	// verify attributes if present
 	if len(signerInfo.SignedAttributes) == 0 {
 		// According to RFC 5652, if the Content Type is id-data, signed
-		// attributes can be empty. However, the CMS package is designed for
+		// attributes can be empty. However, this cms package is designed for
 		// timestamp (RFC 3161) and the content type must be id-ct-TSTInfo,
 		// so we require signed attributes to be present.
 		return nil, VerificationError{Message: "missing signed attributes"}
 	}
 
-	// The content type must be id-ct-TSTInfo for timestamp (RFC 3161).
+	// this cms package is designed for timestamp (RFC 3161) and the content
+	// type must be id-ct-TSTInfo.
 	if !oid.TSTInfo.Equal(d.ContentType) {
 		return nil, fmt.Errorf("unexpected content type: %v", d.ContentType)
 	}
