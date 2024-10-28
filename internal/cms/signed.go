@@ -259,7 +259,7 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 	// content type to be id-ct-TSTInfo is an optimization for tspclient to
 	// fail fast.
 	if !oid.TSTInfo.Equal(d.ContentType) {
-		return nil, fmt.Errorf("unexpected content type: %v", d.ContentType)
+		return nil, fmt.Errorf("unexpected content type: %v. Expected to be id-ct-TSTInfo (%v)", d.ContentType, oid.TSTInfo)
 	}
 	var contentType asn1.ObjectIdentifier
 	if err := signerInfo.SignedAttributes.Get(oid.ContentType, &contentType); err != nil {
