@@ -255,8 +255,9 @@ func (d *ParsedSignedData) verifySignedAttributes(signerInfo *SignerInfo, chains
 		return nil, VerificationError{Message: "missing signed attributes"}
 	}
 
-	// this cms package is designed for timestamp (RFC 3161) and the content
-	// type must be id-ct-TSTInfo.
+	// this CMS package is designed for timestamping (RFC 3161), so checking the
+	// content type to be id-ct-TSTInfo is an optimization for tspclient to
+	// fail fast.
 	if !oid.TSTInfo.Equal(d.ContentType) {
 		return nil, fmt.Errorf("unexpected content type: %v", d.ContentType)
 	}
