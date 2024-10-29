@@ -256,6 +256,24 @@ func TestNewHTTPTimestamper(t *testing.T) {
 	if _, err := NewHTTPTimestamper(nil, malformedURL); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
+
+	malformedURL = "invalid"
+	expectedErrMsg = `endpoint "invalid": scheme must be http or https, but got ""`
+	if _, err := NewHTTPTimestamper(nil, malformedURL); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	malformedURL = "invalid://"
+	expectedErrMsg = `endpoint "invalid://": scheme must be http or https, but got "invalid"`
+	if _, err := NewHTTPTimestamper(nil, malformedURL); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
+
+	malformedURL = "https://"
+	expectedErrMsg = `endpoint "https://": host cannot be empty`
+	if _, err := NewHTTPTimestamper(nil, malformedURL); err == nil || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
+	}
 }
 
 func TestHttpTimestamperTimestamp(t *testing.T) {
