@@ -30,7 +30,7 @@ func TestParseSignedToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedErrMsg := fmt.Sprintf("unexpected content type: %v", oid.Data)
+	expectedErrMsg := fmt.Sprintf("unexpected content type: %v. Expected to be id-ct-TSTInfo (1.2.840.113549.1.9.16.1.4)", oid.Data)
 	_, err = ParseSignedToken(timestampToken)
 	if err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
