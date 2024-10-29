@@ -75,6 +75,9 @@ func TestNewRequest(t *testing.T) {
 
 	defaultRandReader := rand.Reader
 	rand.Reader = &dummyRandReader{}
+	defer func() {
+		rand.Reader = defaultRandReader
+	}()
 	opts = RequestOptions{
 		Content:       message,
 		HashAlgorithm: crypto.SHA256,
@@ -84,7 +87,6 @@ func TestNewRequest(t *testing.T) {
 	if err == nil || !errors.As(err, &malformedRequest) || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
-	rand.Reader = defaultRandReader
 }
 
 func TestRequestMarshalBinary(t *testing.T) {
