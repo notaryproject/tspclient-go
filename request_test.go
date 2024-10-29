@@ -15,11 +15,11 @@ package tspclient
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
 	"fmt"
-	"math/big"
 	"reflect"
 	"testing"
 
@@ -73,9 +73,8 @@ func TestNewRequest(t *testing.T) {
 		t.Fatalf("expected %v, but got %v", asn1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
 	}
 
-	nonceGenerator = func() (*big.Int, error) {
-		return nil, errors.New("failed to generate nonce")
-	}
+	defaultRandReader := rand.Reader
+	rand.Reader = &dummyRandReader{}
 	opts = RequestOptions{
 		Content:       message,
 		HashAlgorithm: crypto.SHA256,
@@ -85,8 +84,7 @@ func TestNewRequest(t *testing.T) {
 	if err == nil || !errors.As(err, &malformedRequest) || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
-	// clean up
-	nonceGenerator = generateNonce
+	rand.Reader = defaultRandReader
 }
 
 func TestRequestMarshalBinary(t *testing.T) {
@@ -170,4 +168,10 @@ func TestValidateRequest(t *testing.T) {
 	if err == nil || !errors.As(err, &malformedRequest) || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
+}
+
+type dummyRandReader struct{}
+
+func (r *dummyRandReader) Read(b []byte) (int, error) {
+	return 0, errors.New("failed to read")
 }
