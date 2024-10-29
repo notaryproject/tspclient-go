@@ -45,7 +45,7 @@ func ParseSignedToken(berData []byte) (*SignedToken, error) {
 		return nil, err
 	}
 	if !oid.TSTInfo.Equal(signed.ContentType) {
-		return nil, fmt.Errorf("unexpected content type: %v", signed.ContentType)
+		return nil, fmt.Errorf("unexpected content type: %v. Expected to be id-ct-TSTInfo (%v)", signed.ContentType, oid.TSTInfo)
 	}
 	return (*SignedToken)(signed), nil
 }

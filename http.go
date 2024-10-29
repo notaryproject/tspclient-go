@@ -53,8 +53,15 @@ func NewHTTPTimestamper(httpClient *http.Client, endpoint string) (Timestamper, 
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 5 * time.Second}
 	}
-	if _, err := url.Parse(endpoint); err != nil {
+	tsaURL, err := url.Parse(endpoint)
+	if err != nil {
 		return nil, err
+	}
+	if tsaURL.Scheme != "http" && tsaURL.Scheme != "https" {
+		return nil, fmt.Errorf("endpoint %q: scheme must be http or https, but got %q", endpoint, tsaURL.Scheme)
+	}
+	if tsaURL.Host == "" {
+		return nil, fmt.Errorf("endpoint %q: host cannot be empty", endpoint)
 	}
 	return &httpTimestamper{
 		httpClient: httpClient,
