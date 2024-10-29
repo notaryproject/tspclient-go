@@ -57,9 +57,6 @@ func NewHTTPTimestamper(httpClient *http.Client, endpoint string) (Timestamper, 
 	if err != nil {
 		return nil, err
 	}
-	if tsaURL.Scheme == "" {
-		return nil, fmt.Errorf("endpoint %q: scheme cannot be empty", endpoint)
-	}
 	if tsaURL.Scheme != "http" && tsaURL.Scheme != "https" {
 		return nil, fmt.Errorf("endpoint %q: scheme must be http or https, but got %q", endpoint, tsaURL.Scheme)
 	}

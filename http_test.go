@@ -258,7 +258,7 @@ func TestNewHTTPTimestamper(t *testing.T) {
 	}
 
 	malformedURL = "invalid"
-	expectedErrMsg = `endpoint "invalid": scheme cannot be empty`
+	expectedErrMsg = `endpoint "invalid": scheme must be http or https, but got ""`
 	if _, err := NewHTTPTimestamper(nil, malformedURL); err == nil || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
