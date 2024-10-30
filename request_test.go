@@ -15,6 +15,7 @@ package tspclient
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
@@ -70,6 +71,21 @@ func TestNewRequest(t *testing.T) {
 	}
 	if !reflect.DeepEqual(req.MessageImprint.HashAlgorithm.Parameters, asn1NullRawValue) {
 		t.Fatalf("expected %v, but got %v", asn1NullRawValue, req.MessageImprint.HashAlgorithm.Parameters)
+	}
+
+	defaultRandReader := rand.Reader
+	rand.Reader = &dummyRandReader{}
+	defer func() {
+		rand.Reader = defaultRandReader
+	}()
+	opts = RequestOptions{
+		Content:       message,
+		HashAlgorithm: crypto.SHA256,
+	}
+	expectedErrMsg = "malformed timestamping request: failed to generate nonce"
+	_, err = NewRequest(opts)
+	if err == nil || !errors.As(err, &malformedRequest) || err.Error() != expectedErrMsg {
+		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
 }
 
@@ -154,4 +170,10 @@ func TestValidateRequest(t *testing.T) {
 	if err == nil || !errors.As(err, &malformedRequest) || err.Error() != expectedErrMsg {
 		t.Fatalf("expected error %s, but got %v", expectedErrMsg, err)
 	}
+}
+
+type dummyRandReader struct{}
+
+func (r *dummyRandReader) Read(b []byte) (int, error) {
+	return 0, errors.New("failed to read")
 }

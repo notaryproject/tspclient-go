@@ -73,14 +73,9 @@ func TestTSATimestampGranted(t *testing.T) {
 
 	// do timestamp
 	message := []byte("notation")
-	nonce, err := generateNonce()
-	if err != nil {
-		t.Fatal("failed to create nonce:", err)
-	}
 	requestOpts := RequestOptions{
 		Content:       message,
 		HashAlgorithm: crypto.SHA256,
-		Nonce:         nonce,
 	}
 	req, err := NewRequest(requestOpts)
 	if err != nil {
