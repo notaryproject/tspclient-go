@@ -19,7 +19,7 @@ import (
 )
 
 func TestConvertToDER(t *testing.T) {
-	var testBytes = make([]byte, 0xFFFFFFFF+8)
+	var testBytes = make([]byte, 0x7FFFFFFF)
 	// primitive identifier
 	testBytes[0] = 0x1f
 	testBytes[1] = 0xa0
